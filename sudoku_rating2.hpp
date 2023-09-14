@@ -9,7 +9,6 @@
 #include <set>
 #include <utility>
 #include <vector>
-
 namespace Sudoku {
 class Pos {
 public:
@@ -41,6 +40,9 @@ public:
     // if they are equal
     return false;
   }
+  bool operator==(const Pos &rhs) const {
+    return col == rhs.col && row == rhs.row;
+  }
 };
 
 // TODO: Inherit from std::vector and remove f.
@@ -50,7 +52,7 @@ public:
   Figure(int col_max, int row_max) { fill_grid(col_max, row_max); }
   Figure() {}
 
-  Figure fill_grid(int col_max, int row_max) {
+  Figure &fill_grid(int col_max, int row_max) {
     for (int row = 0; row < row_max; row++) {
       for (int col = 0; col < col_max; col++) {
         insert({col, row});
@@ -59,7 +61,7 @@ public:
     return *this;
   }
 
-  Figure square(int number) {
+  Figure &square(int number) {
     int first_col = (number % 3) * 3;
     int first_row = (number / 3) * 3;
 
@@ -70,7 +72,7 @@ public:
     }
     return *this;
   }
-  Figure square(Pos of_pos) {
+  Figure &square(Pos of_pos) {
     int first_col = (of_pos.col / 3) * 3;
     int first_row = (of_pos.row / 3) * 3;
 
@@ -82,24 +84,31 @@ public:
     return *this;
   }
 
-  Figure col(int number) {
+  Figure &col(int number) {
     for (int row = 0; row < 9; row++) {
       insert({number, row});
     }
     return *this;
   }
 
-  Figure row(int number) {
+  Figure &row(int number) {
     for (int col = 0; col < 9; col++) {
       insert({col, number});
     }
     return *this;
   }
 
-  Figure neighbours_of(Pos pos) {
+  Figure &neighbours_of(Pos pos) {
     row(pos.row);
     col(pos.col);
     square(pos);
+    return *this;
+  }
+
+  Figure &remove(Figure other) {
+    for (Pos pos : other) {
+      erase(pos);
+    }
     return *this;
   }
 
@@ -241,7 +250,7 @@ public:
 
   std::map<Pos, std::vector<int>> get_pencilmarks() { return pencilmarks; }
 
-  std::map<int, int> count_clues(Figure &figure) {
+  std::map<int, int> count_pencilmarks(Figure &figure) {
     std::map<int, int> clues_count = {};
     for (Pos pos : figure) {
       for (int clue : pencilmarks[pos]) {
@@ -249,6 +258,39 @@ public:
       }
     }
     return clues_count;
+  }
+
+  std::vector<int> pencilmarks_with_count(Figure &figure, int count) {
+    std::map<int, int> clues_count = count_pencilmarks(figure);
+    std::vector<int> res;
+    for (std::pair<int, int> clue : clues_count) {
+      if (clue.second == count) {
+        res.push_back(clue.first);
+      }
+    }
+    return res;
+  }
+
+  Figure get_pencilmarks_positions(Figure &figure, int number) {
+    Figure positions = {};
+    for (Pos pos : figure) {
+      for (int clue : pencilmarks[pos]) {
+        if (clue == number) {
+          positions.insert(pos);
+        }
+      }
+    }
+    return positions;
+  }
+
+  void remove_pencilmarks(Figure &figure, int pencilmark_number) {
+    for (Pos pos : figure) {
+      auto pos_to_remove = std::find(pencilmarks[pos].begin(),
+                                     pencilmarks[pos].end(), pencilmark_number);
+      if (pos_to_remove != pencilmarks[pos].end()) {
+        pencilmarks[pos].erase(pos_to_remove);
+      }
+    }
   }
 };
 class Solver {
@@ -262,7 +304,7 @@ private:
       }
       puzzle.set_clue(pos, pencilmarks[pos][0]);
       std::cout << "single candidate (" << pencilmarks[pos][0]
-                << ") spotted at: " << pos.col << " " << pos.row << std::endl;
+                << ") spotted at: " << pos << std::endl;
       return true;
     }
     return false;
@@ -270,31 +312,27 @@ private:
 
   bool single_position_spot(std::map<Pos, std::vector<int>> pencilmarks) {
     for (int number = 0; number < 9; number++) {
+
       Figure col = Figure().col(number);
       Figure row = Figure().row(number);
       Figure square = Figure().square(number);
 
-      auto find_single_position = [this, &pencilmarks](Figure figure) -> bool {
-        std::map<int, int> clues_count = puzzle.count_clues(figure);
+      auto find_single_position = [this, &pencilmarks,
+                                   number](Figure figure) -> bool {
+        // find clues with count 1;
+        std::vector<int> single_position_clues =
+            puzzle.pencilmarks_with_count(figure, 1);
 
-        // find clue with count 1;
-        int single_position_clue = -1;
-        for (std::pair<int, int> clue : clues_count) {
-          if (clue.second == 1) {
-            single_position_clue = clue.first;
-          }
-        }
-        if (single_position_clue == -1) {
+        if (single_position_clues.size() == 0) {
           return false;
         }
         // get position of this clue;
         for (Pos pos : figure) {
           for (int clue : pencilmarks[pos]) {
-            if (clue == single_position_clue) {
-              puzzle.set_clue(pos, single_position_clue);
-              std::cout << "single position (" << single_position_clue
-                        << ") spotted at: " << pos.col << " " << pos.row
-                        << std::endl;
+            if (clue == single_position_clues[0]) {
+              puzzle.set_clue(pos, single_position_clues[0]);
+              std::cout << "single position (" << single_position_clues[0]
+                        << ") spotted at: " << pos << std::endl;
               return true;
             }
           }
@@ -309,6 +347,62 @@ private:
     return false;
   }
 
+  bool candidate_lines_spot() {
+    // this map stores founded candidate lines. after we found some candidate
+    // line in square, we write it to the founded candidate lines like this:
+    // founded_candidate_lines[square_number].push_back(number_that_we_found);
+    static std::map<int, std::vector<int>> founded_candidate_lines;
+    for (int square_number = 0; square_number < 9; square_number++) {
+      // counting all numbers in square pencilmarks
+      Figure square = Figure().square(square_number);
+      // finding numbers, which count in square equals to 2
+      std::vector<int> clues_count = puzzle.pencilmarks_with_count(square, 2);
+      for (int clue : clues_count) {
+        // check is founded
+        bool is_founded_already = false;
+        for (std::pair<int, std::vector<int>> founded :
+             founded_candidate_lines) {
+          if (founded.first == square_number &&
+              std::find(founded.second.begin(), founded.second.end(), clue) !=
+                  founded.second.end()) {
+            is_founded_already = true;
+          }
+        }
+        if (is_founded_already) {
+          continue;
+        }
+
+        Figure numbers_position =
+            puzzle.get_pencilmarks_positions(square, clue);
+
+        Figure positions_to_blacklist;
+        if (numbers_position[0].col == numbers_position[1].col) {
+          positions_to_blacklist = Figure().col(numbers_position[0].col);
+        } else if (numbers_position[0].row == numbers_position[1].row) {
+          positions_to_blacklist = Figure().row(numbers_position[0].row);
+        }
+        // if they aren't on the same row or col, skip this number
+        else {
+          continue;
+        }
+        // remove first and second number positions (they are guaranteed to be
+        // in blacklist)
+        positions_to_blacklist.remove(numbers_position);
+
+        puzzle.remove_pencilmarks(positions_to_blacklist, clue);
+
+        founded_candidate_lines[square_number].push_back(clue);
+
+        std::cout << "candidate line (" << clue
+                  << ") spotted at: " << numbers_position[0] << " and "
+                  << numbers_position[1] << std::endl;
+
+        return true;
+      }
+    }
+    return false;
+  }
+
 public:
   Solver(Puzzle _puzzle) : puzzle{_puzzle} {}
   int get_difficulty() {
@@ -316,8 +410,10 @@ public:
       auto current_pencilmarks = puzzle.get_pencilmarks();
       if (single_candidate_spot(current_pencilmarks)) {
       } else if (single_position_spot(current_pencilmarks)) {
+      } else if (candidate_lines_spot()) {
       } else {
         std::cout << "Can't solve this puzzle!:(\n";
+        puzzle.print_clues();
         std::exit(1);
       }
     }
