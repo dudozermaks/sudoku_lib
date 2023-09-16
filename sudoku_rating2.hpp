@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <numeric>
 #include <set>
@@ -45,7 +46,6 @@ public:
   }
 };
 
-// TODO: Inherit from std::vector and remove f.
 class Figure : public std::set<Pos> {
 public:
   Figure(std::set<Pos> f) { insert(f.begin(), f.end()); }
@@ -105,11 +105,34 @@ public:
     return *this;
   }
 
-  Figure &remove(Figure other) {
+  Figure &remove(Figure &other) {
     for (Pos pos : other) {
       erase(pos);
     }
     return *this;
+  }
+
+  std::vector<int> get_rows_occupied() {
+    std::set<int> rows;
+    for (Pos pos : *this) {
+      rows.insert(pos.row);
+    }
+    return std::vector<int>(rows.begin(), rows.end());
+  }
+
+  std::vector<int> get_cols_occupied() {
+    std::set<int> cols;
+    for (Pos pos : *this) {
+      cols.insert(pos.col);
+    }
+    return std::vector<int>(cols.begin(), cols.end());
+  }
+
+  static Figure intersect(Figure &f1, Figure &f2) {
+    Figure intersection;
+    std::set_intersection(f1.begin(), f1.end(), f2.begin(), f2.end(),
+                          std::inserter(intersection, intersection.begin()));
+    return intersection;
   }
 
   friend std::ostream &operator<<(std::ostream &os, const Figure &figure) {
@@ -180,7 +203,6 @@ public:
   }
   void print_clues() {
     for (Pos pos : Figure(9, 9)) {
-      // std::cout << pos;
       std::cout << clues[pos];
       if (pos.col == 8) {
         std::cout << std::endl;
@@ -198,6 +220,7 @@ public:
       }
       std::cout << "}, ";
     }
+    std::cout << std::endl;
   }
 
   bool is_space_for_clues_avalible() {
@@ -293,6 +316,7 @@ public:
     }
   }
 };
+
 class Solver {
 private:
   Puzzle puzzle;
@@ -403,6 +427,148 @@ private:
     return false;
   }
 
+  struct OccupiedColsAndRows {
+    // cols_and_rows[0] - cols
+    // cols_and_rows[1] - rows
+    std::vector<int> cols_and_rows[2];
+    int number;
+  };
+
+  std::vector<OccupiedColsAndRows>
+  candidates_for_dpt_or_mlt(Figure &figure, int number_of_possible_cells) {
+    std::vector<OccupiedColsAndRows> res;
+    std::vector<int> pencilmarks_with_max_count =
+        puzzle.pencilmarks_with_count(figure, number_of_possible_cells);
+
+    for (int pencilmark : pencilmarks_with_max_count) {
+      Figure pencilmarks_position =
+          puzzle.get_pencilmarks_positions(figure, pencilmark);
+
+      OccupiedColsAndRows to_push;
+      to_push.number = pencilmark;
+      std::vector<int> cols_occupied = pencilmarks_position.get_cols_occupied();
+      std::vector<int> rows_occupied = pencilmarks_position.get_rows_occupied();
+      if (cols_occupied.size() == 2) {
+        to_push.cols_and_rows[0] = cols_occupied;
+      }
+      if (rows_occupied.size() == 2) {
+        to_push.cols_and_rows[1] = rows_occupied;
+      }
+      res.push_back(to_push);
+    }
+    return res;
+  };
+
+  bool double_pairs_or_multiple_lines_spot(bool double_pairs) {
+    static std::vector<OccupiedColsAndRows> founded;
+    std::map<int, std::vector<OccupiedColsAndRows>> candidates;
+
+    for (int square_number = 0; square_number < 9; square_number++) {
+      if (double_pairs) {
+        candidates[square_number] =
+            candidates_for_dpt_or_mlt(Figure().square(square_number), 2);
+      }
+    }
+
+    auto print_double_pair = [](OccupiedColsAndRows candidate,
+                                int square_number1, int square_number2) {
+      std::cout << "double pairs (" << candidate.number
+                << ") spotted in squares: " << square_number1 << " and "
+                << square_number2 << std::endl;
+    };
+
+    auto next_square_in_col = [](int square1, int square2) {
+      int square_col = square1 % 3;
+      while (square1 == square_col || square2 == square_col) {
+        square_col += 3;
+      }
+      return square_col;
+    };
+
+    auto next_square_in_row = [](int square1, int square2) {
+      int square_row = (square1 / 3) * 3;
+      while (square1 == square_row || square2 == square_row) {
+        square_row += 1;
+      }
+      return square_row;
+    };
+
+    auto check = [this, double_pairs, next_square_in_row, next_square_in_col,
+                  print_double_pair](OccupiedColsAndRows c1,
+                                     OccupiedColsAndRows c2, int square1,
+                                     int square2) {
+      if (c1.number != c2.number) {
+        return false;
+      }
+
+      // i=0 - checking cols
+      // i=1 - checking rows
+      for (int i = 0; i < 2; i++) {
+        if (c1.cols_and_rows[i] == c2.cols_and_rows[i] &&
+            c1.cols_and_rows[i].size() != 0) {
+          Figure cols_or_rows;
+          Figure figure_to_remove_from;
+          if (i == 0) {
+            cols_or_rows = Figure()
+                               .col(c1.cols_and_rows[i][0])
+                               .col(c1.cols_and_rows[i][1]);
+            figure_to_remove_from =
+                Figure().square(next_square_in_col(square1, square2));
+          } else {
+            cols_or_rows = Figure()
+                               .row(c1.cols_and_rows[i][0])
+                               .row(c1.cols_and_rows[i][1]);
+            figure_to_remove_from =
+                Figure().square(next_square_in_row(square1, square2));
+          }
+
+          figure_to_remove_from =
+              Figure::intersect(figure_to_remove_from, cols_or_rows);
+          puzzle.remove_pencilmarks(figure_to_remove_from, c1.number);
+          founded.push_back(c1);
+          if (double_pairs) {
+            print_double_pair(c1, square1, square2);
+          }
+          return true;
+        }
+      }
+      return false;
+    };
+
+    auto is_founded = [](OccupiedColsAndRows candidate) {
+      auto check = [candidate](OccupiedColsAndRows &other) {
+        return candidate.number == other.number &&
+               candidate.cols_and_rows[0] == other.cols_and_rows[0] &&
+               candidate.cols_and_rows[1] == other.cols_and_rows[1];
+      };
+      return std::find_if(founded.begin(), founded.end(), check) !=
+             founded.end();
+    };
+
+    // TODO: optimize that loop
+    for (int square_number1 = 0; square_number1 < 8; square_number1++) {
+      for (OccupiedColsAndRows candidate1 : candidates[square_number1]) {
+
+        if (is_founded(candidate1)) {
+          continue;
+        }
+
+        for (int square_number2 = square_number1 + 1; square_number2 < 9;
+             square_number2++) {
+          for (OccupiedColsAndRows candidate2 : candidates[square_number2]) {
+
+            if (check(candidate1, candidate2, square_number1, square_number2)) {
+              return true;
+            }
+
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
 public:
   Solver(Puzzle _puzzle) : puzzle{_puzzle} {}
   int get_difficulty() {
@@ -411,15 +577,18 @@ public:
       if (single_candidate_spot(current_pencilmarks)) {
       } else if (single_position_spot(current_pencilmarks)) {
       } else if (candidate_lines_spot()) {
+      } else if (double_pairs_or_multiple_lines_spot(true)) {
       } else {
         std::cout << "Can't solve this puzzle!:(\n";
         puzzle.print_clues();
+        puzzle.print_pencilmarks();
         std::exit(1);
       }
     }
     puzzle.print_clues();
     if (puzzle.is_solved()) {
       std::cout << "solved!\n";
+      puzzle.print_clues();
     }
     return 0;
   }
