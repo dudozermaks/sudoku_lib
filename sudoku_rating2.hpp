@@ -283,11 +283,12 @@ public:
     return clues_count;
   }
 
-  std::vector<int> pencilmarks_with_count(Figure &figure, int count) {
+  std::vector<int> pencilmarks_with_count(Figure &figure, int min_count,
+                                          int max_count) {
     std::map<int, int> clues_count = count_pencilmarks(figure);
     std::vector<int> res;
     for (std::pair<int, int> clue : clues_count) {
-      if (clue.second == count) {
+      if (clue.second >= min_count && clue.second <= max_count) {
         res.push_back(clue.first);
       }
     }
@@ -345,7 +346,7 @@ private:
                                    number](Figure figure) -> bool {
         // find clues with count 1;
         std::vector<int> single_position_clues =
-            puzzle.pencilmarks_with_count(figure, 1);
+            puzzle.pencilmarks_with_count(figure, 1, 1);
 
         if (single_position_clues.size() == 0) {
           return false;
@@ -380,7 +381,8 @@ private:
       // counting all numbers in square pencilmarks
       Figure square = Figure().square(square_number);
       // finding numbers, which count in square equals to 2
-      std::vector<int> clues_count = puzzle.pencilmarks_with_count(square, 2);
+      std::vector<int> clues_count =
+          puzzle.pencilmarks_with_count(square, 2, 2);
       for (int clue : clues_count) {
         // check is founded
         bool is_founded_already = false;
@@ -435,12 +437,11 @@ private:
   };
 
   std::vector<OccupiedColsAndRows>
-  candidates_for_dpt_or_mlt(Figure &figure, int number_of_possible_cells) {
+  candidates_for_dpt_or_mlt(Figure &figure,
+                            std::vector<int> pencilmarks_candidates) {
     std::vector<OccupiedColsAndRows> res;
-    std::vector<int> pencilmarks_with_max_count =
-        puzzle.pencilmarks_with_count(figure, number_of_possible_cells);
 
-    for (int pencilmark : pencilmarks_with_max_count) {
+    for (int pencilmark : pencilmarks_candidates) {
       Figure pencilmarks_position =
           puzzle.get_pencilmarks_positions(figure, pencilmark);
 
@@ -460,19 +461,30 @@ private:
   };
 
   bool double_pairs_or_multiple_lines_spot(bool double_pairs) {
+		// TODO: split into 2 separate functions
     static std::vector<OccupiedColsAndRows> founded;
     std::map<int, std::vector<OccupiedColsAndRows>> candidates;
 
     for (int square_number = 0; square_number < 9; square_number++) {
+      Figure square = Figure().square(square_number);
+      std::vector<int> pencilmarks;
       if (double_pairs) {
-        candidates[square_number] =
-            candidates_for_dpt_or_mlt(Figure().square(square_number), 2);
-      }
+        pencilmarks = puzzle.pencilmarks_with_count(square, 2, 2);
+      } else{
+				pencilmarks = puzzle.pencilmarks_with_count(square, 2, 6);
+			}
+      candidates[square_number] =
+          candidates_for_dpt_or_mlt(square, pencilmarks);
     }
 
-    auto print_double_pair = [](OccupiedColsAndRows candidate,
+    auto print_founded = [double_pairs](OccupiedColsAndRows candidate,
                                 int square_number1, int square_number2) {
-      std::cout << "double pairs (" << candidate.number
+			if (double_pairs){
+				std::cout << "double pairs";
+			}else {
+				std::cout << "multiply lines";
+			}
+      std::cout << " (" << candidate.number
                 << ") spotted in squares: " << square_number1 << " and "
                 << square_number2 << std::endl;
     };
@@ -493,8 +505,8 @@ private:
       return square_row;
     };
 
-    auto check = [this, double_pairs, next_square_in_row, next_square_in_col,
-                  print_double_pair](OccupiedColsAndRows c1,
+    auto check = [this, next_square_in_row, next_square_in_col,
+                  print_founded](OccupiedColsAndRows c1,
                                      OccupiedColsAndRows c2, int square1,
                                      int square2) {
       if (c1.number != c2.number) {
@@ -526,9 +538,7 @@ private:
               Figure::intersect(figure_to_remove_from, cols_or_rows);
           puzzle.remove_pencilmarks(figure_to_remove_from, c1.number);
           founded.push_back(c1);
-          if (double_pairs) {
-            print_double_pair(c1, square1, square2);
-          }
+					print_founded(c1, square1, square2);
           return true;
         }
       }
@@ -560,7 +570,6 @@ private:
             if (check(candidate1, candidate2, square_number1, square_number2)) {
               return true;
             }
-
           }
         }
       }
@@ -578,6 +587,7 @@ public:
       } else if (single_position_spot(current_pencilmarks)) {
       } else if (candidate_lines_spot()) {
       } else if (double_pairs_or_multiple_lines_spot(true)) {
+      } else if (double_pairs_or_multiple_lines_spot(false)) {
       } else {
         std::cout << "Can't solve this puzzle!:(\n";
         puzzle.print_clues();
@@ -585,7 +595,6 @@ public:
         std::exit(1);
       }
     }
-    puzzle.print_clues();
     if (puzzle.is_solved()) {
       std::cout << "solved!\n";
       puzzle.print_clues();
