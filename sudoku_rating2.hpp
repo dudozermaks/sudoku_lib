@@ -332,7 +332,7 @@ public:
     }
     return positions;
   }
-  std::set<int> get_pencilmarks_in_common(Figure &figure) {
+  std::set<int> get_pencilmarks_set(Figure &figure) {
     std::set<int> res;
     for (Pos pos : figure) {
       for (int pencilmark : pencilmarks[pos]) {
@@ -689,7 +689,7 @@ private:
             optimized_figure.sub_figure(possible_pos.get_positions());
 
         std::set<int> set_of_pencilmarks =
-            puzzle.get_pencilmarks_in_common(sub_figure);
+            puzzle.get_pencilmarks_set(sub_figure);
 
         if (set_of_pencilmarks.size() == N) {
 					bool is_pencilmarks_removed = false;
