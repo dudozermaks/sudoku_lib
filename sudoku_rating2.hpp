@@ -136,7 +136,7 @@ public:
     return std::vector<int>(cols.begin(), cols.end());
   }
 
-  static Figure intersect(Figure &f1, Figure &f2) {
+  static Figure intersect(Figure f1, Figure f2) {
     Figure intersection;
     std::set_intersection(f1.begin(), f1.end(), f2.begin(), f2.end(),
                           std::inserter(intersection, intersection.begin()));
@@ -192,7 +192,8 @@ private:
   }
 
 public:
-  Puzzle(std::string from, std::vector<std::vector<int>> user_pencilmarks={}) {
+  Puzzle(std::string from,
+         std::vector<std::vector<int>> user_pencilmarks = {}) {
     if (from.size() != 9 * 9) {
       std::cout << "Puzzle size (" << from.size() << ") != 9*9. Exiting!";
       std::exit(1);
@@ -207,17 +208,16 @@ public:
       std::exit(1);
     }
 
-		if (user_pencilmarks.empty()){
-			generate_pencilmarks();
-		}
-		else {
-			Figure field = Figure(9, 9);
-			int pos = 0;
-			for (std::vector<int>pencilmark : user_pencilmarks){
-				pencilmarks[field[pos]] = pencilmark;
-				pos ++;
-			}
-		}
+    if (user_pencilmarks.empty()) {
+      generate_pencilmarks();
+    } else {
+      Figure field = Figure(9, 9);
+      int pos = 0;
+      for (std::vector<int> pencilmark : user_pencilmarks) {
+        pencilmarks[field[pos]] = pencilmark;
+        pos++;
+      }
+    }
   }
   void print_clues() {
     for (Pos pos : Figure(9, 9)) {
@@ -321,7 +321,7 @@ public:
     return res;
   }
 
-  Figure get_pencilmarks_positions(Figure &figure, int number) {
+  Figure get_pencilmark_positions(Figure &figure, int number) {
     Figure positions = {};
     for (Pos pos : figure) {
       for (int clue : pencilmarks[pos]) {
@@ -342,17 +342,40 @@ public:
     return res;
   }
 
+  bool remove_pencilmark_from_cell(Pos pos, int pencilmark) {
+    auto pos_to_remove =
+        std::find(pencilmarks[pos].begin(), pencilmarks[pos].end(), pencilmark);
+    if (pos_to_remove != pencilmarks[pos].end()) {
+      pencilmarks[pos].erase(pos_to_remove);
+      return true;
+    }
+    return false;
+  }
   bool remove_pencilmarks(Figure &figure, int pencilmark_number) {
-		bool is_pencilmarks_removed = false;
+    bool is_pencilmarks_removed = false;
     for (Pos pos : figure) {
-      auto pos_to_remove = std::find(pencilmarks[pos].begin(),
-                                     pencilmarks[pos].end(), pencilmark_number);
-      if (pos_to_remove != pencilmarks[pos].end()) {
-				is_pencilmarks_removed = true;
-        pencilmarks[pos].erase(pos_to_remove);
+      if (remove_pencilmark_from_cell(pos, pencilmark_number)) {
+        is_pencilmarks_removed = true;
       }
     }
-		return is_pencilmarks_removed;
+    return is_pencilmarks_removed;
+  }
+  bool remove_all_pencilmarks_except(Figure &figure,
+                                     std::vector<int> pencilmarks_to_left) {
+    bool is_pencilmarks_removed = false;
+    for (Pos pos : figure) {
+      std::vector<int> pencilmarks_in_cell = pencilmarks[pos];
+      for (int i = 1; i <= 9; i++) {
+        if (std::find(pencilmarks_to_left.begin(), pencilmarks_to_left.end(),
+                      i) != pencilmarks_to_left.end()) {
+          continue;
+        }
+        if (remove_pencilmark_from_cell(pos, i)) {
+          is_pencilmarks_removed = true;
+        }
+      }
+    }
+    return is_pencilmarks_removed;
   }
 };
 
@@ -360,7 +383,8 @@ class Solver {
 private:
   Puzzle puzzle;
 
-  bool single_candidate_spot(std::map<Pos, std::vector<int>> pencilmarks) {
+  bool single_candidate_spot() {
+    std::map<Pos, std::vector<int>> pencilmarks = puzzle.get_pencilmarks();
     for (Pos pos : Figure(9, 9)) {
       if (pencilmarks[pos].size() != 1) {
         continue;
@@ -373,35 +397,29 @@ private:
     return false;
   }
 
-  bool single_position_spot(std::map<Pos, std::vector<int>> pencilmarks) {
+  bool single_position_spot() {
+    std::map<Pos, std::vector<int>> pencilmarks = puzzle.get_pencilmarks();
+    auto find_single_position = [this, &pencilmarks](Figure figure) -> bool {
+      // find pencilmarks with count 1;
+      std::vector<int> single_position_pencilmarks =
+          puzzle.pencilmarks_with_count(figure, 1, 1);
+      if (single_position_pencilmarks.size() == 0) {
+        return false;
+      }
+      // get position of this pencilmark
+      Figure pencilmark_pos = puzzle.get_pencilmark_positions(
+          figure, single_position_pencilmarks[0]);
+      puzzle.set_clue(pencilmark_pos[0], single_position_pencilmarks[0]);
+      std::cout << "single position (" << single_position_pencilmarks[0]
+                << ") spotted at: " << pencilmark_pos[0] << std::endl;
+      return true;
+    };
     for (int number = 0; number < 9; number++) {
 
       Figure col = Figure().col(number);
       Figure row = Figure().row(number);
       Figure square = Figure().square(number);
 
-      auto find_single_position = [this, &pencilmarks,
-                                   number](Figure figure) -> bool {
-        // find clues with count 1;
-        std::vector<int> single_position_clues =
-            puzzle.pencilmarks_with_count(figure, 1, 1);
-
-        if (single_position_clues.size() == 0) {
-          return false;
-        }
-        // get position of this clue;
-        for (Pos pos : figure) {
-          for (int clue : pencilmarks[pos]) {
-            if (clue == single_position_clues[0]) {
-              puzzle.set_clue(pos, single_position_clues[0]);
-              std::cout << "single position (" << single_position_clues[0]
-                        << ") spotted at: " << pos << std::endl;
-              return true;
-            }
-          }
-        }
-        return false;
-      };
       if (find_single_position(square) || find_single_position(col) ||
           find_single_position(row)) {
         return true;
@@ -436,8 +454,7 @@ private:
           continue;
         }
 
-        Figure numbers_position =
-            puzzle.get_pencilmarks_positions(square, clue);
+        Figure numbers_position = puzzle.get_pencilmark_positions(square, clue);
 
         Figure positions_to_blacklist;
         if (numbers_position[0].col == numbers_position[1].col) {
@@ -453,7 +470,7 @@ private:
         // in blacklist)
         positions_to_blacklist.remove(numbers_position);
 
-				// TODO: if no pencilmarks remove, continue searching
+        // TODO: if no pencilmarks remove, continue searching
         puzzle.remove_pencilmarks(positions_to_blacklist, clue);
 
         founded_candidate_lines[square_number].push_back(clue);
@@ -482,7 +499,7 @@ private:
 
     for (int pencilmark : pencilmarks_candidates) {
       Figure pencilmarks_position =
-          puzzle.get_pencilmarks_positions(figure, pencilmark);
+          puzzle.get_pencilmark_positions(figure, pencilmark);
 
       OccupiedColsAndRows to_push;
       to_push.number = pencilmark;
@@ -576,7 +593,7 @@ private:
           figure_to_remove_from =
               Figure::intersect(figure_to_remove_from, cols_or_rows);
 
-					// TODO: if no pencilmarks remove, continue searching
+          // TODO: if no pencilmarks remove, continue searching
           puzzle.remove_pencilmarks(figure_to_remove_from, c1.number);
           founded.push_back(c1);
           print_founded(c1, square1, square2);
@@ -641,36 +658,37 @@ private:
       }
       return false;
     }
-		void create_possible_pos(){
+    void create_possible_pos() {
       for (int i = 0; i < N; i++) {
         possible_pos.push_back(i);
       }
-		}
+    }
+
   public:
     PossibleCellsPosNPT(int N, size_t max_index) {
       this->N = N;
       this->max_index = max_index;
     }
     bool increment() {
-			if (possible_pos.size() == 0) {
-				create_possible_pos();
-				return true;
-			}
-			if (!can_increment()){ return false; }
-			// increment last position
-			increment_pos(N-1);
-			return true;
+      if (possible_pos.size() == 0) {
+        create_possible_pos();
+        return true;
+      }
+      if (!can_increment()) {
+        return false;
+      }
+      // increment last position
+      increment_pos(N - 1);
+      return true;
     }
     std::vector<int> get_positions() { return possible_pos; }
   };
   bool naked_nth_spot(int N) {
-
     auto find_in_figure = [N, this](Figure figure) {
       Figure optimized_figure = figure;
       std::map<Pos, std::vector<int>> pencilmarks =
           puzzle.get_pencilmarks(optimized_figure);
 
-      // remove cells where pencilmark count > N
       for (auto pencilmark : pencilmarks) {
         if (pencilmark.second.size() > N || pencilmark.second.size() == 0) {
           optimized_figure.erase(pencilmark.first);
@@ -682,7 +700,8 @@ private:
       }
       PossibleCellsPosNPT possible_pos{N, optimized_figure.size()};
 
-			// TODO: Add proper function to check if can increment, and only then increment
+      // TODO: Add proper function to check if can increment, and only then
+      // increment
       while (possible_pos.increment()) {
 
         Figure sub_figure =
@@ -692,23 +711,90 @@ private:
             puzzle.get_pencilmarks_set(sub_figure);
 
         if (set_of_pencilmarks.size() == N) {
-					bool is_pencilmarks_removed = false;
-					Figure figure_to_remove = figure;
-					figure_to_remove.remove(sub_figure);
-          for (int pencilmark : set_of_pencilmarks){
-						if (puzzle.remove_pencilmarks(figure_to_remove, pencilmark)){
-							is_pencilmarks_removed = true;
-						}
-					}
-					if (!is_pencilmarks_removed){
-						continue;
-					}
-					std::cout << "naked " << N << " (";
-          for (int pencilmark : set_of_pencilmarks){
-						std::cout << pencilmark << ", ";
-					}
-					std::cout << "\b\b) spotted at: " << sub_figure << std::endl;
-					return true;
+          bool is_pencilmarks_removed = false;
+          Figure figure_to_remove = figure;
+          figure_to_remove.remove(sub_figure);
+          for (int pencilmark : set_of_pencilmarks) {
+            if (puzzle.remove_pencilmarks(figure_to_remove, pencilmark)) {
+              is_pencilmarks_removed = true;
+            }
+          }
+          if (!is_pencilmarks_removed) {
+            continue;
+          }
+          std::cout << "naked " << N << " (";
+          for (int pencilmark : set_of_pencilmarks) {
+            std::cout << pencilmark << ", ";
+          }
+          std::cout << "\b\b) spotted at: " << sub_figure << std::endl;
+          return true;
+        }
+      }
+      return false;
+    };
+    for (int figure_number = 0; figure_number < 9; figure_number++) {
+      Figure col = Figure().col(figure_number);
+      Figure row = Figure().row(figure_number);
+      Figure square = Figure().square(figure_number);
+      if (find_in_figure(col) || find_in_figure(row) ||
+          find_in_figure(square)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool hidden_nth_spot(int N) {
+    auto find_in_figure = [N, this](Figure figure) {
+      Figure optimized_figure = figure;
+      std::map<Pos, std::vector<int>> pencilmarks =
+          puzzle.get_pencilmarks(optimized_figure);
+
+      for (auto pencilmark : pencilmarks) {
+        // TODO: insert in Puzzle::get_pencilmarks function.
+        if (pencilmark.second.size() == 0) {
+          optimized_figure.erase(pencilmark.first);
+        }
+      }
+
+      if (optimized_figure.size() < N) {
+        return false;
+      }
+
+      std::vector<int> set_of_pencilmarks =
+          puzzle.pencilmarks_with_count(optimized_figure, 2, N);
+
+      if (set_of_pencilmarks.size() < N) {
+        return false;
+      }
+
+      PossibleCellsPosNPT possible_pos{N, set_of_pencilmarks.size()};
+
+      // TODO: Add proper function to check if can increment, and only then
+      // increment
+      while (possible_pos.increment()) {
+        Figure sub_figure;
+        for (int i : possible_pos.get_positions()) {
+          Figure figure_to_insert =
+              puzzle.get_pencilmark_positions(figure, set_of_pencilmarks[i]);
+          sub_figure.insert(figure_to_insert.begin(), figure_to_insert.end());
+        }
+
+        if (sub_figure.size() == N) {
+          std::vector<int> pencilmarks_to_left;
+          for (int i : possible_pos.get_positions()) {
+            pencilmarks_to_left.push_back(set_of_pencilmarks[i]);
+          }
+          if (!puzzle.remove_all_pencilmarks_except(sub_figure,
+                                                    pencilmarks_to_left)) {
+            continue;
+          }
+          std::cout << "hidden " << N << " (";
+          for (int i : possible_pos.get_positions()) {
+            std::cout << set_of_pencilmarks[i] << ", ";
+          }
+          std::cout << "\b\b) spotted at: " << sub_figure << std::endl;
+          return true;
         }
       }
       return false;
@@ -729,15 +815,18 @@ public:
   Solver(Puzzle _puzzle) : puzzle{_puzzle} {}
   int get_difficulty() {
     while (puzzle.is_space_for_clues_avalible()) {
-      auto current_pencilmarks = puzzle.get_pencilmarks();
-      if (single_candidate_spot(current_pencilmarks)) {
-      } else if (single_position_spot(current_pencilmarks)) {
+      if (single_candidate_spot()) {
+      } else if (single_position_spot()) {
       } else if (candidate_lines_spot()) {
       } else if (double_pairs_or_multiple_lines_spot(true)) {
       } else if (double_pairs_or_multiple_lines_spot(false)) {
       } else if (naked_nth_spot(2)) {
+      } else if (hidden_nth_spot(2)) {
       } else if (naked_nth_spot(3)) {
+      } else if (hidden_nth_spot(3)) {
       } else if (naked_nth_spot(4)) {
+      } else if (hidden_nth_spot(4)) {
+
       } else {
         std::cout << "Can't solve this puzzle!:(\n";
         puzzle.print_clues();
