@@ -1,15 +1,14 @@
 #pragma once
 
-#include <algorithm>
-#include <cstddef>
-#include <functional>
 #include <iostream>
-#include <iterator>
+
 #include <map>
-#include <numeric>
 #include <set>
-#include <utility>
 #include <vector>
+
+#include <algorithm>
+#include <numeric>
+
 namespace Sudoku {
 class Pos {
 public:
@@ -840,5 +839,6 @@ public:
     }
     return 0;
   }
+  Puzzle &get_puzzle() { return puzzle; }
 };
 } // namespace Sudoku
