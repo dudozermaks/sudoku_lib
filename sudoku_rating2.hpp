@@ -10,6 +10,56 @@
 #include <numeric>
 
 namespace Sudoku {
+namespace Utility {
+class NDIncrementCount {
+private:
+  int N;
+  std::vector<int> possible_pos;
+  int max_index;
+  void increment_pos(int i) {
+    if (possible_pos[i] == max_index - 1 - (N - i - 1)) {
+      increment_pos(i - 1);
+      possible_pos[i] = possible_pos[i - 1] + 1;
+    } else {
+      possible_pos[i]++;
+      return;
+    }
+  }
+
+  bool can_increment() {
+    for (int i = 0; i < N; i++) {
+      if (possible_pos[i] < max_index - N + i) {
+        return true;
+      }
+    }
+    return false;
+  }
+  void create_possible_pos() {
+    for (int i = 0; i < N; i++) {
+      possible_pos.push_back(i);
+    }
+  }
+
+public:
+  NDIncrementCount(int N, size_t max_index) {
+    this->N = N;
+    this->max_index = max_index;
+  }
+  bool increment() {
+    if (possible_pos.size() == 0) {
+      create_possible_pos();
+      return true;
+    }
+    if (!can_increment()) {
+      return false;
+    }
+    // increment last position
+    increment_pos(N - 1);
+    return true;
+  }
+  std::vector<int> get_positions() { return possible_pos; }
+};
+} // namespace Utility
 class Pos {
 public:
   int col, row;
@@ -292,6 +342,9 @@ public:
   std::map<Pos, std::vector<int>> get_pencilmarks(Figure &figure) {
     std::map<Pos, std::vector<int>> res;
     for (Pos pos : figure) {
+      // TODO, optimize: if pencilmarks[pos] == 0, then do not insert. Right now
+      // this change causes some bugs with puzzle
+      // 000006509000300070018000030009030004200060007600050800040000710050003000107800000
       res.insert({pos, pencilmarks[pos]});
     }
     return res;
@@ -399,7 +452,6 @@ private:
   bool single_position_spot() {
     std::map<Pos, std::vector<int>> pencilmarks = puzzle.get_pencilmarks();
     auto find_single_position = [this, &pencilmarks](Figure figure) -> bool {
-      // find pencilmarks with count 1;
       std::vector<int> single_position_pencilmarks =
           puzzle.pencilmarks_with_count(figure, 1, 1);
       if (single_position_pencilmarks.size() == 0) {
@@ -440,18 +492,21 @@ private:
           puzzle.pencilmarks_with_count(square, 2, 2);
       for (int clue : clues_count) {
         // check is founded
-        bool is_founded_already = false;
-        for (std::pair<int, std::vector<int>> founded :
-             founded_candidate_lines) {
-          if (founded.first == square_number &&
-              std::find(founded.second.begin(), founded.second.end(), clue) !=
-                  founded.second.end()) {
-            is_founded_already = true;
-          }
-        }
-        if (is_founded_already) {
-          continue;
-        }
+     //    bool is_founded_already = false;
+     //    for (std::pair<int, std::vector<int>> founded :
+     //         founded_candidate_lines) {
+     //      if (founded.first == square_number &&
+     //          std::find(founded.second.begin(), founded.second.end(), clue) !=
+     //              founded.second.end()) {
+     //        is_founded_already = true;
+     //      }
+     //    }
+     //    if (is_founded_already) {
+					// if (square_number == 4){
+					// 	std::cout << clue << std::endl;
+					// }
+     //      continue;
+     //    }
 
         Figure numbers_position = puzzle.get_pencilmark_positions(square, clue);
 
@@ -469,8 +524,9 @@ private:
         // in blacklist)
         positions_to_blacklist.remove(numbers_position);
 
-        // TODO: if no pencilmarks remove, continue searching
-        puzzle.remove_pencilmarks(positions_to_blacklist, clue);
+        if (!puzzle.remove_pencilmarks(positions_to_blacklist, clue)) {
+          continue;
+        }
 
         founded_candidate_lines[square_number].push_back(clue);
 
@@ -516,7 +572,6 @@ private:
   };
 
   bool double_pairs_or_multiple_lines_spot(bool double_pairs) {
-    // TODO: split into 2 separate functions
     static std::vector<OccupiedColsAndRows> founded;
     std::map<int, std::vector<OccupiedColsAndRows>> candidates;
 
@@ -592,8 +647,9 @@ private:
           figure_to_remove_from =
               Figure::intersect(figure_to_remove_from, cols_or_rows);
 
-          // TODO: if no pencilmarks remove, continue searching
-          puzzle.remove_pencilmarks(figure_to_remove_from, c1.number);
+          if (!puzzle.remove_pencilmarks(figure_to_remove_from, c1.number)) {
+            continue;
+          }
           founded.push_back(c1);
           print_founded(c1, square1, square2);
           return true;
@@ -634,54 +690,6 @@ private:
 
     return false;
   }
-  class PossibleCellsPosNPT {
-  private:
-    int N;
-    std::vector<int> possible_pos;
-    int max_index;
-    void increment_pos(int i) {
-      if (possible_pos[i] == max_index - 1 - (N - i - 1)) {
-        increment_pos(i - 1);
-        possible_pos[i] = possible_pos[i - 1] + 1;
-      } else {
-        possible_pos[i]++;
-        return;
-      }
-    }
-
-    bool can_increment() {
-      for (int i = 0; i < N; i++) {
-        if (possible_pos[i] < max_index - N + i) {
-          return true;
-        }
-      }
-      return false;
-    }
-    void create_possible_pos() {
-      for (int i = 0; i < N; i++) {
-        possible_pos.push_back(i);
-      }
-    }
-
-  public:
-    PossibleCellsPosNPT(int N, size_t max_index) {
-      this->N = N;
-      this->max_index = max_index;
-    }
-    bool increment() {
-      if (possible_pos.size() == 0) {
-        create_possible_pos();
-        return true;
-      }
-      if (!can_increment()) {
-        return false;
-      }
-      // increment last position
-      increment_pos(N - 1);
-      return true;
-    }
-    std::vector<int> get_positions() { return possible_pos; }
-  };
   bool naked_nth_spot(int N) {
     auto find_in_figure = [N, this](Figure figure) {
       Figure optimized_figure = figure;
@@ -697,10 +705,8 @@ private:
       if (optimized_figure.size() < N) {
         return false;
       }
-      PossibleCellsPosNPT possible_pos{N, optimized_figure.size()};
+      Utility::NDIncrementCount possible_pos{N, optimized_figure.size()};
 
-      // TODO: Add proper function to check if can increment, and only then
-      // increment
       while (possible_pos.increment()) {
 
         Figure sub_figure =
@@ -767,10 +773,8 @@ private:
         return false;
       }
 
-      PossibleCellsPosNPT possible_pos{N, set_of_pencilmarks.size()};
+      Utility::NDIncrementCount possible_pos{N, set_of_pencilmarks.size()};
 
-      // TODO: Add proper function to check if can increment, and only then
-      // increment
       while (possible_pos.increment()) {
         Figure sub_figure;
         for (int i : possible_pos.get_positions()) {
