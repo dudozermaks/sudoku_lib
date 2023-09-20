@@ -480,10 +480,6 @@ private:
   }
 
   bool candidate_lines_spot() {
-    // this map stores founded candidate lines. after we found some candidate
-    // line in square, we write it to the founded candidate lines like this:
-    // founded_candidate_lines[square_number].push_back(number_that_we_found);
-    static std::map<int, std::vector<int>> founded_candidate_lines;
     for (int square_number = 0; square_number < 9; square_number++) {
       // counting all numbers in square pencilmarks
       Figure square = Figure().square(square_number);
@@ -491,22 +487,6 @@ private:
       std::vector<int> clues_count =
           puzzle.pencilmarks_with_count(square, 2, 2);
       for (int clue : clues_count) {
-        // check is founded
-     //    bool is_founded_already = false;
-     //    for (std::pair<int, std::vector<int>> founded :
-     //         founded_candidate_lines) {
-     //      if (founded.first == square_number &&
-     //          std::find(founded.second.begin(), founded.second.end(), clue) !=
-     //              founded.second.end()) {
-     //        is_founded_already = true;
-     //      }
-     //    }
-     //    if (is_founded_already) {
-					// if (square_number == 4){
-					// 	std::cout << clue << std::endl;
-					// }
-     //      continue;
-     //    }
 
         Figure numbers_position = puzzle.get_pencilmark_positions(square, clue);
 
@@ -527,8 +507,6 @@ private:
         if (!puzzle.remove_pencilmarks(positions_to_blacklist, clue)) {
           continue;
         }
-
-        founded_candidate_lines[square_number].push_back(clue);
 
         std::cout << "candidate line (" << clue
                   << ") spotted at: " << numbers_position[0] << " and "
@@ -572,7 +550,6 @@ private:
   };
 
   bool double_pairs_or_multiple_lines_spot(bool double_pairs) {
-    static std::vector<OccupiedColsAndRows> founded;
     std::map<int, std::vector<OccupiedColsAndRows>> candidates;
 
     for (int square_number = 0; square_number < 9; square_number++) {
@@ -650,7 +627,6 @@ private:
           if (!puzzle.remove_pencilmarks(figure_to_remove_from, c1.number)) {
             continue;
           }
-          founded.push_back(c1);
           print_founded(c1, square1, square2);
           return true;
         }
@@ -658,23 +634,10 @@ private:
       return false;
     };
 
-    auto is_founded = [](OccupiedColsAndRows candidate) {
-      auto check = [candidate](OccupiedColsAndRows &other) {
-        return candidate.number == other.number &&
-               candidate.cols_and_rows[0] == other.cols_and_rows[0] &&
-               candidate.cols_and_rows[1] == other.cols_and_rows[1];
-      };
-      return std::find_if(founded.begin(), founded.end(), check) !=
-             founded.end();
-    };
 
     // TODO: optimize that loop
     for (int square_number1 = 0; square_number1 < 8; square_number1++) {
       for (OccupiedColsAndRows candidate1 : candidates[square_number1]) {
-
-        if (is_founded(candidate1)) {
-          continue;
-        }
 
         for (int square_number2 = square_number1 + 1; square_number2 < 9;
              square_number2++) {
