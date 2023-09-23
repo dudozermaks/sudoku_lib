@@ -780,13 +780,23 @@ public:
   public:
     int score = 0;
     bool is_solved = false;
-    std::unordered_set<std::string> used_methods;
+    std::set<std::string> used_methods;
     bool operator==(Result const &other) {
       return other.score == score && other.is_solved == is_solved &&
              other.used_methods == used_methods;
     };
     bool operator!=(Result const &other) {
 			return !(*this == other);
+		}
+		friend std::ostream &operator<<(std::ostream &os, const Result &solver_res) {
+			os << "Score: " << solver_res.score << std::endl;
+			os << "Is solved: " << solver_res.is_solved << std::endl;
+			os << "Used methods: {";
+			for (std::string used_method : solver_res.used_methods){
+				std::cout << "\"" << used_method << "\", ";
+			}
+			os << "\b\b}" << std::endl;
+			return os;
 		}
   };
   Solver(Puzzle _puzzle) : puzzle{_puzzle} {
