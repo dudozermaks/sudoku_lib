@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <algorithm>
@@ -246,7 +247,8 @@ public:
 
   bool load(std::string from) {
     if (from.size() != 9 * 9) {
-      std::cout << "Puzzle size (" << from.size() << ") != 9*9" << "\nPuzzle: " << from << std::endl;
+      std::cout << "Puzzle size (" << from.size() << ") != 9*9"
+                << "\nPuzzle: " << from << std::endl;
       return false;
     }
 
@@ -429,9 +431,8 @@ public:
 class Solver {
 private:
   Puzzle puzzle;
-  // std::vector<std::pair<std::string, int>> method_scores_first_time;
-  // std::vector<std::pair<std::string, int>> method_scores_subsequent;
-  // std::vector<std::pair<std::string, int>> method_actual_scores;
+  std::map<std::string, int> method_scores_subsequent;
+  std::multimap<int, std::string> methods_score;
 
   bool single_candidate_spot() {
     std::map<Pos, std::vector<int>> pencilmarks = puzzle.get_pencilmarks();
@@ -775,62 +776,107 @@ private:
   }
 
 public:
-  struct Result {
-    int difficulty;
+  class Result {
+  public:
+    int score = 0;
     bool is_solved = false;
-    std::vector<std::string> methods_used;
+    std::unordered_set<std::string> used_methods;
+    bool operator==(Result const &other) {
+      return other.score == score && other.is_solved == is_solved &&
+             other.used_methods == used_methods;
+    };
+    bool operator!=(Result const &other) {
+			return !(*this == other);
+		}
   };
   Solver(Puzzle _puzzle) : puzzle{_puzzle} {
-    // method_scores_first_time = {
-    //     {"Single Candidate", 10}, {"Single Position", 10},
-    //     {"Candidate Lines", 35},  {"Double Pairs", 50},
-    //     {"Multiple Lines", 70},   {"Naked Pair", 75},
-    //     {"Hidden Pair", 150},     {"Naked Triple", 200},
-    //     {"Hidden Triple", 240},   {"X-Wing", 280},
-    //     {"Forcing Chains", 420},  {"Naked Quad", 500},
-    //     {"Hidden Quad", 700},     {"Swordfish", 800},
-    // };
-    // method_scores_subsequent = {
-    //     {"Single Candidate", 10}, {"Single Position", 10},
-    //     {"Candidate Lines", 20},  {"Double Pairs", 25},
-    //     {"Multiple Lines", 40},   {"Naked Pair", 50},
-    //     {"Hidden Pair", 120},     {"Naked Triple", 140},
-    //     {"Hidden Triple", 160},   {"X-Wing", 160},
-    //     {"Forcing Chains", 210},  {"Naked Quad", 400},
-    //     {"Hidden Quad", 500},     {"Swordfish", 600},
-    // };
-    //
-    // method_actual_scores = method_scores_first_time;
+    methods_score = {
+        {10, "Single Candidate"}, {10, "Single Position"},
+        {35, "Candidate Lines"},  {50, "Double Pairs"},
+        {70, "Multiple Lines"},   {75, "Naked Pair"},
+        {150, "Hidden Pair"},     {200, "Naked Triple"},
+        {240, "Hidden Triple"},   {280, "X-Wing"},
+        {420, "Forcing Chains"},  {500, "Naked Quad"},
+        {700, "Hidden Quad"},     {800, "Swordfish"},
+    };
+
+    method_scores_subsequent = {
+        {"Single Candidate", 10}, {"Single Position", 10},
+        {"Candidate Lines", 20},  {"Double Pairs", 25},
+        {"Multiple Lines", 40},   {"Naked Pair", 50},
+        {"Hidden Pair", 120},     {"Naked Triple", 140},
+        {"Hidden Triple", 160},   {"X-Wing", 160},
+        {"Forcing Chains", 210},  {"Naked Quad", 400},
+        {"Hidden Quad", 500},     {"Swordfish", 600},
+    };
   }
+  std::string solving_step(Result &res) {
+    for (auto method : methods_score) {
+      if (method.second == "Single Candidate" && single_candidate_spot()) {
+        return method.second;
+      } else if (method.second == "Single Position" && single_position_spot()) {
+        return method.second;
+      } else if (method.second == "Candidate Lines" && candidate_lines_spot()) {
+        return method.second;
+      } else if (method.second == "Double Pairs" &&
+                 double_pairs_or_multiple_lines_spot(true)) {
+        return method.second;
+      } else if (method.second == "Multiple Lines" &&
+                 double_pairs_or_multiple_lines_spot(false)) {
+        return method.second;
+      } else if (method.second == "Naked Pair" && naked_nth_spot(2)) {
+        return method.second;
+      } else if (method.second == "Hidden Pair" && hidden_nth_spot(2)) {
+        return method.second;
+      } else if (method.second == "Naked Triple" && naked_nth_spot(3)) {
+        return method.second;
+      } else if (method.second == "Hidden Triple" && hidden_nth_spot(3)) {
+        return method.second;
+      } else if (method.second == "Naked Quad" && naked_nth_spot(4)) {
+        return method.second;
+      } else if (method.second == "Hidden Quad" && hidden_nth_spot(4)) {
+        return method.second;
+      }
+    }
+
+    std::cout << "can't solve this puzzle!:(\n";
+    puzzle.print_clues();
+    puzzle.print_pencilmarks();
+    return "";
+  }
+  void update_result_and_methods(Result &res, std::string used_method) {
+    res.used_methods.insert(used_method);
+    auto it_to_remove = methods_score.end();
+    for (auto it = methods_score.begin(); it != methods_score.end(); it++) {
+      if (it->second == used_method) {
+        res.score += it->first;
+        if (it->first != method_scores_subsequent[used_method]) {
+          it_to_remove = it;
+        }
+        break;
+      }
+    }
+    if (it_to_remove != methods_score.end()) {
+      methods_score.erase(it_to_remove);
+      methods_score.emplace(method_scores_subsequent[used_method], used_method);
+    }
+  }
+
   Result solve() {
-    Result res;
+    Result res = {};
     std::cout << "solving: " << std::endl;
     puzzle.print_clues();
     while (puzzle.is_space_for_clues_avalible()) {
-      if (single_candidate_spot()) {
-      } else if (single_position_spot()) {
-      } else if (candidate_lines_spot()) {
-      } else if (double_pairs_or_multiple_lines_spot(true)) {
-      } else if (double_pairs_or_multiple_lines_spot(false)) {
-      } else if (naked_nth_spot(2)) {
-      } else if (hidden_nth_spot(2)) {
-      } else if (naked_nth_spot(3)) {
-      } else if (hidden_nth_spot(3)) {
-      } else if (naked_nth_spot(4)) {
-      } else if (hidden_nth_spot(4)) {
-
-      } else {
-        std::cout << "can't solve this puzzle!:(\n";
-        puzzle.print_clues();
-        puzzle.print_pencilmarks();
-				return res;
-      }
+      std::string used_method = solving_step(res);
+      if (used_method == "") {
+        return res;
+      };
+      update_result_and_methods(res, used_method);
     }
     if (puzzle.is_solved()) {
-      std::cout << "solved!\n";
-      puzzle.print_clues();
+      std::cout << "solved!\nscore: " << res.score << std::endl;
     }
-		res.is_solved = true;
+    res.is_solved = true;
     return res;
   }
   Puzzle &get_puzzle() { return puzzle; }
