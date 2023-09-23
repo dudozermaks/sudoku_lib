@@ -4,6 +4,7 @@
 
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 #include <algorithm>
@@ -241,11 +242,12 @@ private:
   }
 
 public:
-  Puzzle(std::string from,
-         std::vector<std::vector<int>> user_pencilmarks = {}) {
+  Puzzle() {}
+
+  bool load(std::string from) {
     if (from.size() != 9 * 9) {
-      std::cout << "Puzzle size (" << from.size() << ") != 9*9. Exiting!";
-      std::exit(1);
+      std::cout << "Puzzle size (" << from.size() << ") != 9*9" << "\nPuzzle: " << from << std::endl;
+      return false;
     }
 
     for (Pos pos : Figure(9, 9)) {
@@ -253,21 +255,14 @@ public:
     }
 
     if (!is_right()) {
-      std::cout << "Puzzle is not right. Exiting!";
-      std::exit(1);
+      std::cout << "Puzzle is not right. Puzzle: " << from << std::endl;
+      return false;
     }
 
-    if (user_pencilmarks.empty()) {
-      generate_pencilmarks();
-    } else {
-      Figure field = Figure(9, 9);
-      int pos = 0;
-      for (std::vector<int> pencilmark : user_pencilmarks) {
-        pencilmarks[field[pos]] = pencilmark;
-        pos++;
-      }
-    }
+    generate_pencilmarks();
+    return true;
   }
+
   void print_clues() {
     for (Pos pos : Figure(9, 9)) {
       std::cout << clues[pos];
@@ -434,6 +429,9 @@ public:
 class Solver {
 private:
   Puzzle puzzle;
+  // std::vector<std::pair<std::string, int>> method_scores_first_time;
+  // std::vector<std::pair<std::string, int>> method_scores_subsequent;
+  // std::vector<std::pair<std::string, int>> method_actual_scores;
 
   bool single_candidate_spot() {
     std::map<Pos, std::vector<int>> pencilmarks = puzzle.get_pencilmarks();
@@ -634,7 +632,6 @@ private:
       return false;
     };
 
-
     // TODO: optimize that loop
     for (int square_number1 = 0; square_number1 < 8; square_number1++) {
       for (OccupiedColsAndRows candidate1 : candidates[square_number1]) {
@@ -778,8 +775,37 @@ private:
   }
 
 public:
-  Solver(Puzzle _puzzle) : puzzle{_puzzle} {}
-  int get_difficulty() {
+  struct Result {
+    int difficulty;
+    bool is_solved = false;
+    std::vector<std::string> methods_used;
+  };
+  Solver(Puzzle _puzzle) : puzzle{_puzzle} {
+    // method_scores_first_time = {
+    //     {"Single Candidate", 10}, {"Single Position", 10},
+    //     {"Candidate Lines", 35},  {"Double Pairs", 50},
+    //     {"Multiple Lines", 70},   {"Naked Pair", 75},
+    //     {"Hidden Pair", 150},     {"Naked Triple", 200},
+    //     {"Hidden Triple", 240},   {"X-Wing", 280},
+    //     {"Forcing Chains", 420},  {"Naked Quad", 500},
+    //     {"Hidden Quad", 700},     {"Swordfish", 800},
+    // };
+    // method_scores_subsequent = {
+    //     {"Single Candidate", 10}, {"Single Position", 10},
+    //     {"Candidate Lines", 20},  {"Double Pairs", 25},
+    //     {"Multiple Lines", 40},   {"Naked Pair", 50},
+    //     {"Hidden Pair", 120},     {"Naked Triple", 140},
+    //     {"Hidden Triple", 160},   {"X-Wing", 160},
+    //     {"Forcing Chains", 210},  {"Naked Quad", 400},
+    //     {"Hidden Quad", 500},     {"Swordfish", 600},
+    // };
+    //
+    // method_actual_scores = method_scores_first_time;
+  }
+  Result solve() {
+    Result res;
+    std::cout << "solving: " << std::endl;
+    puzzle.print_clues();
     while (puzzle.is_space_for_clues_avalible()) {
       if (single_candidate_spot()) {
       } else if (single_position_spot()) {
@@ -794,17 +820,18 @@ public:
       } else if (hidden_nth_spot(4)) {
 
       } else {
-        std::cout << "Can't solve this puzzle!:(\n";
+        std::cout << "can't solve this puzzle!:(\n";
         puzzle.print_clues();
         puzzle.print_pencilmarks();
-        std::exit(1);
+				return res;
       }
     }
     if (puzzle.is_solved()) {
       std::cout << "solved!\n";
       puzzle.print_clues();
     }
-    return 0;
+		res.is_solved = true;
+    return res;
   }
   Puzzle &get_puzzle() { return puzzle; }
 };
