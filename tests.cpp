@@ -119,6 +119,10 @@ int main() {
 			"624900000739100008815004000400009370300040006591003002900400200100296004248357169", 
 			{1135, true, {"Candidate Lines", "Double Pairs", "Naked Pair", "Naked Quad", "Single Candidate", "Single Position"}}
 	);
+	compare_res(
+			"900051730107398205500076091810724350200165007075983012021537000758649123390812570", 
+			{715, true, {"Double Pairs", "Multiple Lines", "Naked Pair", "Single Candidate", "X-Wing"}}
+	);
 	// std::cout.clear();
 	auto benchmark_end = std::chrono::high_resolution_clock::now();
 	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(benchmark_end - benchmark_start).count() << std::endl;

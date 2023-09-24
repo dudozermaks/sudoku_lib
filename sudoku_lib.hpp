@@ -6,6 +6,7 @@
 #include <set>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <algorithm>
@@ -171,20 +172,20 @@ public:
     return res;
   }
 
-  std::vector<int> get_rows_occupied() {
+  std::set<int> get_rows_occupied() {
     std::set<int> rows;
     for (Pos pos : *this) {
       rows.insert(pos.row);
     }
-    return std::vector<int>(rows.begin(), rows.end());
+    return rows;
   }
 
-  std::vector<int> get_cols_occupied() {
+  std::set<int> get_cols_occupied() {
     std::set<int> cols;
     for (Pos pos : *this) {
       cols.insert(pos.col);
     }
-    return std::vector<int>(cols.begin(), cols.end());
+    return cols;
   }
 
   static Figure intersect(Figure f1, Figure f2) {
@@ -535,8 +536,21 @@ private:
 
       OccupiedColsAndRows to_push;
       to_push.number = pencilmark;
-      std::vector<int> cols_occupied = pencilmarks_position.get_cols_occupied();
-      std::vector<int> rows_occupied = pencilmarks_position.get_rows_occupied();
+      std::vector<int> cols_occupied;
+      std::vector<int> rows_occupied;
+
+      {
+        std::set<int> cols_occupied_set =
+            pencilmarks_position.get_cols_occupied();
+        cols_occupied = std::vector<int>(cols_occupied_set.begin(),
+                                         cols_occupied_set.end());
+
+        std::set<int> rows_occupied_set =
+            pencilmarks_position.get_rows_occupied();
+        rows_occupied = std::vector<int>(rows_occupied_set.begin(),
+                                         rows_occupied_set.end());
+      }
+
       if (cols_occupied.size() == 2) {
         to_push.cols_and_rows[0] = cols_occupied;
       }
@@ -774,6 +788,80 @@ private:
     }
     return false;
   }
+  class XWingCandidate {
+  public:
+    bool is_row;
+    int digit;
+    Figure positions;
+    bool is_situable(XWingCandidate &other) {
+      if (is_row != other.is_row || digit != other.digit) {
+        return false;
+      }
+      if (is_row) {
+        return positions[0].col == other.positions[0].col &&
+               positions[1].col == other.positions[1].col;
+      }
+      return positions[0].row == other.positions[0].row &&
+             positions[1].row == other.positions[1].row;
+    }
+  };
+  bool xwing_spot() {
+    // TODO: Optimizable. Use std::map<std::vector<XWingCandidate>>, where key
+    // is the digit
+    std::vector<XWingCandidate> candidates;
+    auto add_candidates_from_figure = [&candidates, this](Figure &f,
+                                                          bool is_row) {
+      std::vector<int> pencilmarks_with_count_2 =
+          puzzle.pencilmarks_with_count(f, 2, 2);
+      for (int pencilmark : pencilmarks_with_count_2) {
+        Figure positions = puzzle.get_pencilmark_positions(f, pencilmark);
+        candidates.push_back({});
+        candidates.back().is_row = is_row;
+        candidates.back().digit = pencilmark;
+        candidates.back().positions = positions;
+      }
+    };
+    auto founded = [this](XWingCandidate candidate, Figure positions_involved) {
+      Figure positions_to_remove_from;
+      for (Pos pos : positions_involved) {
+        Figure f;
+        if (candidate.is_row) {
+          f = Figure().col(pos.col);
+        } else {
+          f = Figure().row(pos.row);
+        }
+        positions_to_remove_from.insert(f.begin(), f.end());
+      }
+      positions_to_remove_from.remove(positions_involved);
+      if (!puzzle.remove_pencilmarks(positions_to_remove_from, candidate.digit)){
+				return false;
+			}
+      std::cout << "x-wing (" << candidate.digit << ") found at "
+                << positions_involved << std::endl;
+			return true;
+    };
+    for (int i = 0; i < 9; i++) {
+      Figure row = Figure().row(i);
+      Figure col = Figure().col(i);
+      add_candidates_from_figure(row, true);
+      add_candidates_from_figure(col, false);
+    }
+    for (int i = 0; i < candidates.size() - 1; i++) {
+      XWingCandidate candidate1 = candidates[i];
+      for (int j = i+1; j < candidates.size(); j++) {
+        XWingCandidate candidate2 = candidates[j];
+        if (candidate1.is_situable(candidate2)) {
+					Figure positions_involved = candidate1.positions;
+					positions_involved.insert(candidate2.positions.begin(), candidate2.positions.end());
+          if (!founded(candidate1, positions_involved)){
+						continue;
+					}
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
 public:
   class Result {
@@ -785,19 +873,18 @@ public:
       return other.score == score && other.is_solved == is_solved &&
              other.used_methods == used_methods;
     };
-    bool operator!=(Result const &other) {
-			return !(*this == other);
-		}
-		friend std::ostream &operator<<(std::ostream &os, const Result &solver_res) {
-			os << "Score: " << solver_res.score << std::endl;
-			os << "Is solved: " << solver_res.is_solved << std::endl;
-			os << "Used methods: {";
-			for (std::string used_method : solver_res.used_methods){
-				std::cout << "\"" << used_method << "\", ";
-			}
-			os << "\b\b}" << std::endl;
-			return os;
-		}
+    bool operator!=(Result const &other) { return !(*this == other); }
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const Result &solver_res) {
+      os << "Score: " << solver_res.score << std::endl;
+      os << "Is solved: " << solver_res.is_solved << std::endl;
+      os << "Used methods: {";
+      for (std::string used_method : solver_res.used_methods) {
+        std::cout << "\"" << used_method << "\", ";
+      }
+      os << "\b\b}" << std::endl;
+      return os;
+    }
   };
   Solver(Puzzle _puzzle) : puzzle{_puzzle} {
     methods_score = {
@@ -845,6 +932,8 @@ public:
       } else if (method.second == "Naked Quad" && naked_nth_spot(4)) {
         return method.second;
       } else if (method.second == "Hidden Quad" && hidden_nth_spot(4)) {
+        return method.second;
+      } else if (method.second == "X-Wing" && xwing_spot()) {
         return method.second;
       }
     }
