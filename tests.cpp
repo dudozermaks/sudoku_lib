@@ -28,10 +28,9 @@ void compare_res(std::string puzzle, Sudoku::Solver::Result res_to_check){
 }
 
 int main() {
-	// Sudoku::Solver(Sudoku::Puzzle("901500046425090081860010020502000000019000460600000002196040253200060817000001694")).get_difficulty();
-	// Sudoku::Solver(Sudoku::Puzzle("600802735702356940300407062100975024200183079079624003400560207067240300920738406")).get_difficulty(); // naked 3
-	// Sudoku::Solver(Sudoku::Puzzle("128400700973001040456070010002010096860503071710064800091040320000100000007005104")).get_difficulty();
-	// Sudoku::Solver(Sudoku::Puzzle("800000000003600000070090200050007000000045700000100030001000068008500010090000400")).get_difficulty(); // Hardest sudoku ever
+	// test_puzzle("901500046425090081860010020502000000019000460600000002196040253200060817000001694");
+	// test_puzzle("600802735702356940300407062100975024200183079079624003400560207067240300920738406"); // naked 3
+	// test_puzzle("128400700973001040456070010002010096860503071710064800091040320000100000007005104");
 	// test_puzzle("800000000003600000070090200050007000000045700000100030001000068008500010090000400"); // Hardest sudoku ever
 	auto benchmark_start = std::chrono::high_resolution_clock::now();
 	// std::cout.setstate(std::ios::failbit);
@@ -79,9 +78,10 @@ int main() {
 			"002090060000040902000700405000000109930000074504000000409006000107080000080020700", 
 			{795, true, {"Candidate Lines", "Multiple Lines", "Single Candidate", "Single Position"}}
 	);
+
 	compare_res(
-			"000006509000300070018000030009030004200060007600050800040000710050003000107800000", 
-			{895, true, {"Candidate Lines", "Double Pairs", "Hidden Pair", "Single Candidate", "Single Position"}}
+			"900051730107398205500076091810724350200165007075983012021537000758649123390812570", 
+			{715, true, {"Double Pairs", "Multiple Lines", "Naked Pair", "Single Candidate", "X-Wing"}}
 	);
 	compare_res(
 			"000060010000010300100803004020600900009537400007002080900701006003040000080020000", 
@@ -116,12 +116,12 @@ int main() {
 			{1000, true, {"Candidate Lines", "Hidden Pair", "Naked Pair", "Single Candidate", "Single Position"}}
 	);
 	compare_res(
-			"624900000739100008815004000400009370300040006591003002900400200100296004248357169", 
-			{1135, true, {"Candidate Lines", "Double Pairs", "Naked Pair", "Naked Quad", "Single Candidate", "Single Position"}}
+			"004005010100000000028070000500720600060000040002084009000050780000000003070800200", 
+			{1120, true, {"Candidate Lines", "Multiple Lines", "Naked Pair", "Single Candidate", "Single Position", "X-Wing"}}
 	);
 	compare_res(
-			"900051730107398205500076091810724350200165007075983012021537000758649123390812570", 
-			{715, true, {"Double Pairs", "Multiple Lines", "Naked Pair", "Single Candidate", "X-Wing"}}
+			"624900000739100008815004000400009370300040006591003002900400200100296004248357169", 
+			{1135, true, {"Candidate Lines", "Double Pairs", "Naked Pair", "Naked Quad", "Single Candidate", "Single Position"}}
 	);
 	// std::cout.clear();
 	auto benchmark_end = std::chrono::high_resolution_clock::now();
