@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <random>
 
 namespace Sudoku {
 namespace Utility {
@@ -347,6 +348,7 @@ public:
     }
     return res;
   }
+  std::map<Pos, int> get_clues() { return clues; }
 
   std::map<int, int> count_pencilmarks(Figure &figure) {
     std::map<int, int> clues_count = {};
@@ -392,6 +394,14 @@ public:
     return res;
   }
 
+  std::set<int> get_clues_set(Figure &figure) {
+    std::set<int> res;
+    for (Pos pos : figure) {
+			res.insert(clues[pos]);
+    }
+    return res;
+  }
+
   bool remove_pencilmark_from_cell(Pos pos, int pencilmark) {
     auto pos_to_remove =
         std::find(pencilmarks[pos].begin(), pencilmarks[pos].end(), pencilmark);
@@ -400,7 +410,7 @@ public:
       return true;
     }
     return false;
-  }
+  };
   bool remove_pencilmarks(Figure &figure, int pencilmark_number) {
     bool is_pencilmarks_removed = false;
     for (Pos pos : figure) {
@@ -429,7 +439,7 @@ public:
   }
 };
 
-class Solver {
+class HumanSolver {
 private:
   Puzzle puzzle;
   std::map<std::string, int> method_scores_subsequent;
@@ -833,12 +843,13 @@ private:
         positions_to_remove_from.insert(f.begin(), f.end());
       }
       positions_to_remove_from.remove(positions_involved);
-      if (!puzzle.remove_pencilmarks(positions_to_remove_from, candidate.digit)){
-				return false;
-			}
+      if (!puzzle.remove_pencilmarks(positions_to_remove_from,
+                                     candidate.digit)) {
+        return false;
+      }
       std::cout << "x-wing (" << candidate.digit << ") found at "
                 << positions_involved << std::endl;
-			return true;
+      return true;
     };
     for (int i = 0; i < 9; i++) {
       Figure row = Figure().row(i);
@@ -848,14 +859,15 @@ private:
     }
     for (int i = 0; i < candidates.size() - 1; i++) {
       XWingCandidate candidate1 = candidates[i];
-      for (int j = i+1; j < candidates.size(); j++) {
+      for (int j = i + 1; j < candidates.size(); j++) {
         XWingCandidate candidate2 = candidates[j];
         if (candidate1.is_situable(candidate2)) {
-					Figure positions_involved = candidate1.positions;
-					positions_involved.insert(candidate2.positions.begin(), candidate2.positions.end());
-          if (!founded(candidate1, positions_involved)){
-						continue;
-					}
+          Figure positions_involved = candidate1.positions;
+          positions_involved.insert(candidate2.positions.begin(),
+                                    candidate2.positions.end());
+          if (!founded(candidate1, positions_involved)) {
+            continue;
+          }
           return true;
         }
       }
@@ -886,7 +898,7 @@ public:
       return os;
     }
   };
-  Solver(Puzzle _puzzle) : puzzle{_puzzle} {
+  HumanSolver(Puzzle _puzzle) : puzzle{_puzzle} {
     methods_score = {
         {10, "Single Candidate"}, {10, "Single Position"},
         {35, "Candidate Lines"},  {50, "Double Pairs"},
@@ -979,5 +991,75 @@ public:
     return res;
   }
   Puzzle &get_puzzle() { return puzzle; }
+};
+class Generator {
+private:
+  Puzzle puzzle;
+  std::mt19937 rg;
+  void fill_diagonals() {
+    for (int square_number = 0; square_number < 9; square_number += 4) {
+      std::vector<int> numbers;
+      numbers.resize(9);
+      std::iota(numbers.begin(), numbers.end(), 1);
+      std::shuffle(numbers.begin(), numbers.end(), rg);
+      Figure square = Figure().square(square_number);
+      for (Pos pos : square) {
+        puzzle.set_clue(pos, numbers.back());
+        numbers.pop_back();
+      }
+    }
+  }
+  bool is_valid_clue(Pos pos, int clue) {
+    auto is_valid_for_figure = [clue, this](Figure f) {
+      std::set<int> clues = puzzle.get_clues_set(f);
+      return clues.find(clue) == clues.end();
+    };
+    Figure col = Figure().col(pos.col);
+    Figure row = Figure().row(pos.row);
+    Figure square = Figure().square(pos);
+
+    return is_valid_for_figure(col) && is_valid_for_figure(row) &&
+           is_valid_for_figure(square);
+  }
+  bool fill(Pos pos) {
+    // if we reached end of the puzzle
+    if (pos == Pos{9, 8}) {
+      // if line == board_size - 1 and row == board_size:
+      return true;
+    }
+    // if we reached end of the row
+    if (pos.col == 9) {
+      pos.row += 1;
+      pos.col = 0;
+    }
+    if (puzzle.get_clues()[pos] != 0) {
+      pos.col += 1;
+      return fill(pos);
+    }
+    for (int num = 1; num < 10; num++) {
+      if (is_valid_clue(pos, num)) {
+        puzzle.set_clue(pos, num);
+        Pos pos_to_fill = pos;
+        pos_to_fill.col += 1;
+        if (fill(pos_to_fill)) {
+          return true;
+        }
+				puzzle.set_clue(pos, 0);
+      }
+    }
+    // No valid value was found, so backtrack
+    return false;
+  }
+
+public:
+  Generator(unsigned int seed=0) { rg.seed(seed); }
+	Puzzle generate(){
+		puzzle = {};
+
+		fill_diagonals();
+		// starting from second square
+		fill({3, 0});
+		return puzzle;
+	}
 };
 } // namespace Sudoku
