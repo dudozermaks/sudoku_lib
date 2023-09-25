@@ -245,8 +245,9 @@ private:
   }
 
 public:
-  Puzzle() {}
+  Puzzle() { load(std::string(9 * 9, '0')); }
 
+  Puzzle(std::string puzzle) { load(puzzle); }
   bool load(std::string from) {
     if (from.size() != 9 * 9) {
       std::cout << "Puzzle size (" << from.size() << ") != 9*9"
@@ -323,6 +324,20 @@ public:
 
   bool is_solved() { return !is_space_for_clues_avalible() && is_right(); }
 
+  bool is_valid_clue(Pos pos, int clue) {
+    auto is_valid_for_figure = [clue, this](Figure f) {
+      std::set<int> clues = get_clues_set(f);
+      return clues.find(clue) == clues.end();
+    };
+    // TODO: get_neighbours instead of this
+    Figure col = Figure().col(pos.col);
+    Figure row = Figure().row(pos.row);
+    Figure square = Figure().square(pos);
+
+    return is_valid_for_figure(col) && is_valid_for_figure(row) &&
+           is_valid_for_figure(square);
+  }
+
   void set_clue(Pos pos, int clue) {
     clues[pos] = clue;
     pencilmarks[pos] = {};
@@ -397,7 +412,7 @@ public:
   std::set<int> get_clues_set(Figure &figure) {
     std::set<int> res;
     for (Pos pos : figure) {
-			res.insert(clues[pos]);
+      res.insert(clues[pos]);
     }
     return res;
   }
@@ -992,6 +1007,64 @@ public:
   }
   Puzzle &get_puzzle() { return puzzle; }
 };
+
+class BrutforceSolver {
+private:
+  Puzzle puzzle;
+  int solutions_to_found = -1;
+  std::vector<Puzzle> solutions;
+  bool count_solutions(Pos pos = {0, 0}) {
+    // if we reached end of the puzzle
+    if (pos == Pos{9, 8}) {
+      solutions.push_back(puzzle);
+
+      // if we need to count solutions
+      if (solutions_to_found == -1) {
+        return true;
+      }
+      // if we not found solutions number we need to find - return true
+      return solutions.size() < solutions_to_found;
+    }
+    // if we reached end of the row
+    if (pos.col == 9) {
+      pos.row += 1;
+      pos.col = 0;
+    }
+
+    if (puzzle.get_clues()[pos] != 0) {
+      pos.col += 1;
+      return count_solutions(pos);
+    }
+    for (int num = 1; num < 10; num++) {
+      if (puzzle.is_valid_clue(pos, num)) {
+        puzzle.set_clue(pos, num);
+        Pos pos_to_fill = pos;
+        pos_to_fill.col += 1;
+        if (!count_solutions(pos_to_fill)) {
+          puzzle.set_clue(pos, 0);
+          return false;
+        }
+        puzzle.set_clue(pos, 0);
+      }
+    }
+
+    // No valid value was found, so backtrack
+    return true;
+  }
+
+public:
+  BrutforceSolver() {}
+  void load_puzzle(Puzzle puzzle) {
+    this->puzzle = puzzle;
+    solutions.clear();
+  }
+  std::vector<Puzzle> solve(int solutions_to_found = -1) {
+    this->solutions_to_found = solutions_to_found;
+    count_solutions();
+    return solutions;
+  }
+};
+
 class Generator {
 private:
   Puzzle puzzle;
@@ -1009,22 +1082,9 @@ private:
       }
     }
   }
-  bool is_valid_clue(Pos pos, int clue) {
-    auto is_valid_for_figure = [clue, this](Figure f) {
-      std::set<int> clues = puzzle.get_clues_set(f);
-      return clues.find(clue) == clues.end();
-    };
-    Figure col = Figure().col(pos.col);
-    Figure row = Figure().row(pos.row);
-    Figure square = Figure().square(pos);
-
-    return is_valid_for_figure(col) && is_valid_for_figure(row) &&
-           is_valid_for_figure(square);
-  }
   bool fill(Pos pos) {
     // if we reached end of the puzzle
     if (pos == Pos{9, 8}) {
-      // if line == board_size - 1 and row == board_size:
       return true;
     }
     // if we reached end of the row
@@ -1037,14 +1097,14 @@ private:
       return fill(pos);
     }
     for (int num = 1; num < 10; num++) {
-      if (is_valid_clue(pos, num)) {
+      if (puzzle.is_valid_clue(pos, num)) {
         puzzle.set_clue(pos, num);
         Pos pos_to_fill = pos;
         pos_to_fill.col += 1;
         if (fill(pos_to_fill)) {
           return true;
         }
-				puzzle.set_clue(pos, 0);
+        puzzle.set_clue(pos, 0);
       }
     }
     // No valid value was found, so backtrack
@@ -1052,14 +1112,14 @@ private:
   }
 
 public:
-  Generator(unsigned int seed=0) { rg.seed(seed); }
-	Puzzle generate(){
-		puzzle = {};
+  Generator(unsigned int seed = 0) { rg.seed(seed); }
+  Puzzle generate() {
+    puzzle = {};
 
-		fill_diagonals();
-		// starting from second square
-		fill({3, 0});
-		return puzzle;
-	}
+    fill_diagonals();
+    // starting from second square
+    fill({3, 0});
+    return puzzle;
+  }
 };
 } // namespace Sudoku
