@@ -238,12 +238,6 @@ private:
 
     pencilmarks[pos] = candidates;
   }
-  void generate_pencilmarks() {
-    for (Pos pos : Figure(9, 9)) {
-      generate_pencimlmark_for_cell(pos);
-    }
-  }
-
 public:
   Puzzle() { load(std::string(9 * 9, '0')); }
 
@@ -266,6 +260,12 @@ public:
 
     generate_pencilmarks();
     return true;
+  }
+
+  void generate_pencilmarks() {
+    for (Pos pos : Figure(9, 9)) {
+      generate_pencimlmark_for_cell(pos);
+    }
   }
 
   void print_clues() {
@@ -872,6 +872,7 @@ private:
       add_candidates_from_figure(row, true);
       add_candidates_from_figure(col, false);
     }
+		if (candidates.size() == 0){ return false; }
     for (int i = 0; i < candidates.size() - 1; i++) {
       XWingCandidate candidate1 = candidates[i];
       for (int j = i + 1; j < candidates.size(); j++) {
@@ -914,6 +915,7 @@ public:
     }
   };
   HumanSolver(Puzzle _puzzle) : puzzle{_puzzle} {
+		puzzle.generate_pencilmarks();
     methods_score = {
         {10, "Single Candidate"}, {10, "Single Position"},
         {35, "Candidate Lines"},  {50, "Double Pairs"},
@@ -1110,6 +1112,32 @@ private:
     // No valid value was found, so backtrack
     return false;
   }
+  void remove(int how_much) {
+    int removed = 0;
+
+    BrutforceSolver solver;
+    // We can't shuffle this array, because we need operators - and + for class
+    // Pos
+    Figure field = Figure(9, 9);
+		// So we create vector of indexes to field and shuffle this vector instead
+		std::vector<int> indexes;
+		indexes.resize(9*9);
+		std::iota(indexes.begin(), indexes.end(), 0);
+		std::shuffle(indexes.begin(), indexes.end(), rg);
+
+    for (int i : indexes){
+			Pos pos = *next(field.begin(), i);
+    	int number_in_cell = puzzle.get_clues()[pos];
+    	puzzle.set_clue(pos, 0);
+    	solver.load_puzzle(puzzle);
+    	if (solver.solve(2).size() == 2){
+    		puzzle.set_clue(pos, number_in_cell);
+    	}else {
+    		removed ++;
+    		if (removed >= how_much) { return; }
+    	}
+    }
+  }
 
 public:
   Generator(unsigned int seed = 0) { rg.seed(seed); }
@@ -1119,6 +1147,7 @@ public:
     fill_diagonals();
     // starting from second square
     fill({3, 0});
+    remove(26);
     return puzzle;
   }
 };

@@ -5,21 +5,21 @@
 #include <cstdlib>
 
 
-Sudoku::Solver::Result test_puzzle(std::string puzzle_string){
+Sudoku::HumanSolver::Result test_puzzle(std::string puzzle_string){
 	Sudoku::Puzzle puzzle;
 	if (!puzzle.load(puzzle_string)){
 		std::exit(1);
 	}
-	Sudoku::Solver solver{puzzle};
-	Sudoku::Solver::Result solver_result = solver.solve();
+	Sudoku::HumanSolver solver{puzzle};
+	Sudoku::HumanSolver::Result solver_result = solver.solve();
 	if (!solver_result.is_solved){
 		std::exit(1);
 	}
 	return solver_result;
 }
 
-void compare_res(std::string puzzle, Sudoku::Solver::Result res_to_check){
-	Sudoku::Solver::Result res = test_puzzle(puzzle);
+void compare_res(std::string puzzle, Sudoku::HumanSolver::Result res_to_check){
+	Sudoku::HumanSolver::Result res = test_puzzle(puzzle);
 	if (res != res_to_check){
 		std::cout << "\033[31mFailed!\033[0m\n";
 		std::cout << res;
@@ -123,6 +123,19 @@ int main() {
 			"624900000739100008815004000400009370300040006591003002900400200100296004248357169", 
 			{1135, true, {"Candidate Lines", "Double Pairs", "Naked Pair", "Naked Quad", "Single Candidate", "Single Position"}}
 	);
+
+	Sudoku::BrutforceSolver bf_solver;
+	bf_solver.load_puzzle(Sudoku::Puzzle("624900000739100008815004000400009370300040006591003002900400200100296004248357169"));
+	std::cout << bf_solver.solve().size() << std::endl;
+	bf_solver.load_puzzle(Sudoku::Puzzle("295743861431865900876192543387459216612387495549216738763524189928671354154938000"));
+	std::cout << bf_solver.solve().size() << std::endl;
+
+	Sudoku::Generator generator;
+	Sudoku::Puzzle puzzle = generator.generate();
+	puzzle.print_clues();
+	Sudoku::HumanSolver hs = {puzzle};
+	hs.solve();
+
 	// std::cout.clear();
 	auto benchmark_end = std::chrono::high_resolution_clock::now();
 	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(benchmark_end - benchmark_start).count() << std::endl;
