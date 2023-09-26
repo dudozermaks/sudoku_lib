@@ -473,7 +473,6 @@ private:
     }
     return false;
   }
-
   bool single_position_spot() {
     std::map<Pos, std::vector<int>> pencilmarks = puzzle.get_pencilmarks();
     auto find_single_position = [this, &pencilmarks](Figure figure) -> bool {
@@ -503,7 +502,6 @@ private:
     }
     return false;
   }
-
   bool candidate_lines_spot() {
     for (int square_number = 0; square_number < 9; square_number++) {
       // counting all numbers in square pencilmarks
@@ -542,14 +540,12 @@ private:
     }
     return false;
   }
-
   struct OccupiedColsAndRows {
     // cols_and_rows[0] - cols
     // cols_and_rows[1] - rows
     std::vector<int> cols_and_rows[2];
     int number;
   };
-
   std::vector<OccupiedColsAndRows>
   candidates_for_dpt_or_mlt(Figure &figure,
                             std::vector<int> pencilmarks_candidates) {
@@ -586,7 +582,6 @@ private:
     }
     return res;
   };
-
   bool double_pairs_or_multiple_lines_spot(bool double_pairs) {
     std::map<int, std::vector<OccupiedColsAndRows>> candidates;
 
@@ -748,7 +743,6 @@ private:
     }
     return false;
   }
-
   bool hidden_nth_spot(int N) {
     auto find_in_figure = [N, this](Figure figure) {
       Figure optimized_figure = figure;
@@ -1058,6 +1052,7 @@ public:
   BrutforceSolver() {}
   void load_puzzle(Puzzle puzzle) {
     this->puzzle = puzzle;
+		puzzle.generate_pencilmarks();
     solutions.clear();
   }
   std::vector<Puzzle> solve(int solutions_to_found = -1) {
