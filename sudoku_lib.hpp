@@ -1129,20 +1129,21 @@ private:
     		puzzle.set_clue(pos, number_in_cell);
     	}else {
     		removed ++;
-    		if (removed >= how_much) { return; }
+    		if (removed >= how_much && how_much != -1) { return; }
     	}
+
     }
   }
 
 public:
   Generator(unsigned int seed = 0) { rg.seed(seed); }
-  Puzzle generate() {
+  Puzzle generate(unsigned int cells_to_remove_before_difficult_check = -1) {
     puzzle = {};
 
     fill_diagonals();
     // starting from second square
     fill({3, 0});
-    remove(26);
+    remove(cells_to_remove_before_difficult_check);
     return puzzle;
   }
 };
