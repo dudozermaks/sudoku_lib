@@ -33,7 +33,7 @@ int main() {
 	// test_puzzle("128400700973001040456070010002010096860503071710064800091040320000100000007005104");
 	// test_puzzle("800000000003600000070090200050007000000045700000100030001000068008500010090000400"); // Hardest sudoku ever
 	auto benchmark_start = std::chrono::high_resolution_clock::now();
-	// std::cout.setstate(std::ios::failbit);
+	std::cout.setstate(std::ios::failbit);
 	compare_res(
 			"001000570706050003900630040025073090367080154080540230070062009600090702093000400", 
 			{420, true, {"Single Candidate"}}
@@ -123,20 +123,20 @@ int main() {
 			"624900000739100008815004000400009370300040006591003002900400200100296004248357169", 
 			{1135, true, {"Candidate Lines", "Double Pairs", "Naked Pair", "Naked Quad", "Single Candidate", "Single Position"}}
 	);
-
-	Sudoku::BrutforceSolver bf_solver;
-	bf_solver.load_puzzle(Sudoku::Puzzle("624900000739100008815004000400009370300040006591003002900400200100296004248357169"));
-	std::cout << bf_solver.solve().size() << std::endl;
-	bf_solver.load_puzzle(Sudoku::Puzzle("295743861431865900876192543387459216612387495549216738763524189928671354154938000"));
-	std::cout << bf_solver.solve().size() << std::endl;
-
-	Sudoku::Generator generator;
-	Sudoku::Puzzle puzzle = generator.generate();
-	puzzle.print_clues();
-	Sudoku::HumanSolver hs = {puzzle};
-	hs.solve();
-
-	// std::cout.clear();
+	//
+	// Sudoku::BrutforceSolver bf_solver;
+	// bf_solver.load_puzzle(Sudoku::Puzzle("624900000739100008815004000400009370300040006591003002900400200100296004248357169"));
+	// std::cout << bf_solver.solve().size() << std::endl;
+	// bf_solver.load_puzzle(Sudoku::Puzzle("295743861431865900876192543387459216612387495549216738763524189928671354154938000"));
+	// std::cout << bf_solver.solve().size() << std::endl;
+	//
+	// Sudoku::Generator generator;
+	// Sudoku::Puzzle puzzle = generator.generate();
+	// puzzle.print_clues();
+	// Sudoku::HumanSolver hs = {puzzle};
+	// hs.solve();
+	//
+	std::cout.clear();
 	auto benchmark_end = std::chrono::high_resolution_clock::now();
 	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(benchmark_end - benchmark_start).count() << std::endl;
 }

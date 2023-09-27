@@ -1021,64 +1021,6 @@ public:
   Puzzle &get_puzzle() { return puzzle; }
 };
 
-class BrutforceSolver {
-private:
-  Puzzle puzzle;
-  int solutions_to_found = -1;
-  std::vector<Puzzle> solutions;
-  bool count_solutions(Pos pos = {0, 0}) {
-    // if we reached end of the puzzle
-    if (pos == Pos{9, 8}) {
-      solutions.push_back(puzzle);
-
-      // if we need to count solutions
-      if (solutions_to_found == -1) {
-        return true;
-      }
-      // if we not found solutions number we need to find - return true
-      return solutions.size() < solutions_to_found;
-    }
-    // if we reached end of the row
-    if (pos.col == 9) {
-      pos.row += 1;
-      pos.col = 0;
-    }
-
-    if (puzzle.get_clues()[pos] != 0) {
-      pos.col += 1;
-      return count_solutions(pos);
-    }
-    for (int num = 1; num < 10; num++) {
-      if (puzzle.is_valid_clue(pos, num)) {
-        puzzle.set_clue(pos, num);
-        Pos pos_to_fill = pos;
-        pos_to_fill.col += 1;
-        if (!count_solutions(pos_to_fill)) {
-          puzzle.set_clue(pos, 0);
-          return false;
-        }
-        puzzle.set_clue(pos, 0);
-      }
-    }
-
-    // No valid value was found, so backtrack
-    return true;
-  }
-
-public:
-  BrutforceSolver() {}
-  void load_puzzle(Puzzle puzzle) {
-    this->puzzle = puzzle;
-		puzzle.generate_pencilmarks();
-    solutions.clear();
-  }
-  std::vector<Puzzle> solve(int solutions_to_found = -1) {
-    this->solutions_to_found = solutions_to_found;
-    count_solutions();
-    return solutions;
-  }
-};
-
 class Generator {
 private:
   Puzzle puzzle;
@@ -1125,40 +1067,13 @@ private:
     // No valid value was found, so backtrack
     return false;
   }
-  void remove(int how_much) {
-    int removed = 0;
-
-    BrutforceSolver solver;
-    // We can't shuffle this array, because we need operators - and + for class
-    // Pos
-    Figure field = Figure(9, 9);
-		// So we create vector of indexes to field and shuffle this vector instead
-		std::vector<int> indexes;
-		indexes.resize(9*9);
-		std::iota(indexes.begin(), indexes.end(), 0);
-		std::shuffle(indexes.begin(), indexes.end(), rg);
-
-    for (int i : indexes){
-			Pos pos = *next(field.begin(), i);
-    	int number_in_cell = puzzle.get_clues()[pos];
-    	puzzle.set_clue(pos, 0);
-    	solver.load_puzzle(puzzle);
-    	if (solver.solve(2).size() == 2){
-    		puzzle.set_clue(pos, number_in_cell);
-    	}else {
-    		removed ++;
-    		if (removed >= how_much && how_much != -1) { return; }
-    	}
-
-    }
-  }
 
 public:
   Generator(unsigned int seed = 0) {
 		Tdoku::TdokuSetSeed(seed);
 		rg.seed(seed);
 	}
-  Puzzle generate(unsigned int cells_to_remove_before_difficult_check = -1) {
+  Puzzle generate() {
     puzzle = {};
 
     fill_diagonals();
