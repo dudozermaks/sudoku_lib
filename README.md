@@ -99,7 +99,7 @@ HumanSolver (as for version 1.0.0) with -O3 flag solves about 200-250 medium puz
 - [Sudoku Of The Day](https://www.sudokuoftheday.com) - Good example of rating a Sudoku puzzle. Scores from methods was taken from their website.
 
 ### Youtube
-- [Cracking The Cryptic](https://www.youtube.com/@CrackingTheCryptic) - Youtube chanell, where to men solve logical puzzles. I got so much inspirations from this one! It's definitely content made mainly for older generation, but I enjoy it so much! Also, I've got some sudoku strateges from them (like Phistomefel Ring).
+- [Cracking The Cryptic](https://www.youtube.com/@CrackingTheCryptic) - Youtube channel, where to men solve logical puzzles. I got so much inspirations from this one! It's definitely content made mainly for older generation, but I enjoy it so much! Also, I've got some sudoku strateges from them (like Phistomefel Ring).
 
 ### Libraries
 - [Tdoku](https://github.com/t-dillon/tdoku) - Fastest sudoku solver. It's shipped with library in most minimal form possible.
