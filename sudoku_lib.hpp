@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <iostream>
 
 #include <map>
@@ -12,6 +13,10 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
+
+namespace Tdoku {
+#include "tdoku/tdoku.h"
+};
 
 namespace Sudoku {
 namespace Utility {
@@ -250,7 +255,11 @@ public:
     }
 
     for (Pos pos : Figure(9, 9)) {
-      clues[pos] = from[pos.row * 9 + pos.col] - '0';
+			char c = from[pos.row * 9 + pos.col];
+			if (c == '.'){ 
+				c = '0';
+			}
+      clues[pos] = c - '0';
     }
 
     if (!is_right()) {
@@ -452,6 +461,14 @@ public:
     }
     return is_pencilmarks_removed;
   }
+
+	std::string clues_as_string(){
+		std::string res;
+		for (Pos pos : Figure(9, 9)){
+			res.push_back(clues[pos] + '0');
+		}
+		return res;
+	}
 };
 
 class HumanSolver {
@@ -1066,6 +1083,7 @@ class Generator {
 private:
   Puzzle puzzle;
   std::mt19937 rg;
+
   void fill_diagonals() {
     for (int square_number = 0; square_number < 9; square_number += 4) {
       std::vector<int> numbers;
@@ -1136,14 +1154,27 @@ private:
   }
 
 public:
-  Generator(unsigned int seed = 0) { rg.seed(seed); }
+  Generator(unsigned int seed = 0) {
+		Tdoku::TdokuSetSeed(seed);
+		rg.seed(seed);
+	}
   Puzzle generate(unsigned int cells_to_remove_before_difficult_check = -1) {
     puzzle = {};
 
     fill_diagonals();
     // starting from second square
     fill({3, 0});
-    remove(cells_to_remove_before_difficult_check);
+    // remove(cells_to_remove_before_difficult_check);
+		std::string clues_string = puzzle.clues_as_string();
+		char *cstr = new char[clues_string.length() + 1];
+		std::strcpy(cstr, clues_string.c_str());
+		std::cout << std::string(cstr) << std::endl;
+
+		Tdoku::TdokuMinimize(false, false, cstr);
+		puzzle.load(cstr);
+
+		std::cout << std::string(cstr) << std::endl;
+		delete [] cstr;
     return puzzle;
   }
 };
