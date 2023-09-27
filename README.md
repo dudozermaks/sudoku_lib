@@ -85,6 +85,8 @@ HumanSolver (as for version 1.0.0) with -O3 flag solves about 200-250 medium puz
 + Add ImageMaker, that makes picture out of Puzzle. Probably will have some additional dependecies (but maybe not). Probably will be based on SVG format.
 + Make additional app to generate Sudoku puzzles (for journals, personal use, etc.).
 + Add good documentation, maybe even with Doxygen.
++ Add better tests.
++ Create basic website for this project.
 
 ### Maybe...
 + ...Completely re-write this, to Rust or even Zig or something else... The reason I wrote it in C++ is that I know this language very well. I know that start a project in C++ now is a bad idea, so maybe i re-write it.
@@ -95,7 +97,9 @@ HumanSolver (as for version 1.0.0) with -O3 flag solves about 200-250 medium puz
 - [Sudoku Wiki](https://www.sudokuwiki.org/sudoku.htm) - Sudoku solver that uses human methods. Every method explained with details and examples. Love this one!
 - [Sudoku Coach](http://www.taupierbw.be/SudokuCoach) - Detailed description of almost all sudoku methods with examples.
 - [Sudoku Of The Day](https://www.sudokuoftheday.com) - Good example of rating a Sudoku puzzle. Scores from methods was taken from their website.
+
 ### Youtube
 - [Cracking The Cryptic](https://www.youtube.com/@CrackingTheCryptic) - Youtube chanell, where to men solve logical puzzles. I got so much inspirations from this one! It's definitely content made mainly for older generation, but I enjoy it so much! Also, I've got some sudoku strateges from them (like Phistomefel Ring).
+
 ### Libraries
 - [Tdoku](https://github.com/t-dillon/tdoku) - Fastest sudoku solver. It's shipped with library in most minimal form possible.
