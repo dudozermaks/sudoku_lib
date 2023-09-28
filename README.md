@@ -45,7 +45,7 @@ We don't have complex build systems. Just add folder with library to include dir
 This class represents position in gird, like `Pos{0, 8}` means it's column 1 and row 9. Nothing special.
 
 ### Figure
-Set of Pos'es. This is an interesting thing.
+Set of Pos. This is an interesting thing.
 
 + `Figure(9, 9)` generates Figure, which contains positions from {0, 0} to {8, 8}. Using this you can quickly iterate through all pencilmarks or all clues in the puzzle.
 + `Figure().col(x)`, `Figure().row(x)` `Figure().square(x)` generates a Figure number x. If x=3, then it will return Figure of 3'rd column, row, or square.
@@ -98,11 +98,11 @@ HumanSolver is tested on my machine, which has i3-4170 Intel processor and Nvidi
 HumanSolver (as for version 1.0.0) with -O3 flag solves about 200-250 medium puzzles per second.
 
 ## Plans
-+ Add some more methods to HumanSolver (like Swordfish and others). I probably won't add guessing based methods like all kinds of Forcing Chains. But I will add some techniques that have not been implemented in this king of solvers(as long as I know) like Phistomefel Ring, Reverse Phistomefel Ring, etc.
-+ Add rating-based generation of puzzles. Right now, when you generate a puzzle you recive puzzle with random difficulty.
++ Add some more methods to HumanSolver (like Swordfish and others). I probably won't add guessing based methods like all kinds of Forcing Chains. But I will add some techniques that have not been implemented in this king of solvers (as long as I know) like Phistomefel Ring, Reverse Phistomefel Ring, etc.
++ Add rating-based generation of puzzles. Right now, when you generate a puzzle you receive puzzle with random difficulty.
 + Speed up HumanSolver. Optimize and improve optimizable and improvable:).
 + Add caching to HumanSolver and Generator. The technique for HumanSolver is already made up, only thing left is to implement it.
-+ Add ImageMaker, that makes picture out of Puzzle. Probably will have some additional dependencies (but maybe not). Probably will be based on SVG format.
++ Add Image Maker, that makes picture out of Puzzle. Probably will have some additional dependencies (but maybe not). Probably will be based on SVG format.
 + Make additional app to generate Sudoku puzzles (for journals, personal use, etc.).
 + Add good documentation, maybe even with Doxygen.
 + Add better tests.
