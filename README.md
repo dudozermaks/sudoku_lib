@@ -1,20 +1,40 @@
 # Ultimate Sudoku library.
-Featuring Generator (that uses fastest solver [Tdoku](https://github.com/t-dillon/tdoku)) and HumanSolver, that solves puzzle with human methods. Also, there is some helper classes like Pos, Figure or Puzzle, that provide greate API for interacting with puzzle itself.
-One of the fings I care about is simplicity. This library has minimal dependeces list possible, but it is still quite fast.
+Featuring Generator (that uses fastest solver [Tdoku](https://github.com/t-dillon/tdoku)) and HumanSolver, that solves puzzle with human methods. Also, there are some helper classes like Pos, Figure or Puzzle, that provide great API for interacting with puzzle itself.
+One of the things I care about is simplicity. This library has minimal dependencies list possible, but it is still quite fast.
+
+<!--toc:start-->
+- [Ultimate Sudoku library.](#ultimate-sudoku-library)
+  - [How to build](#how-to-build)
+    - [For using in your own projects](#for-using-in-your-own-projects)
+    - [For tests](#for-tests)
+  - [A few words about internals.](#a-few-words-about-internals)
+    - [Pos](#pos)
+    - [Figure](#figure)
+    - [Puzzle](#puzzle)
+    - [Human Solver](#human-solver)
+    - [Generator](#generator)
+  - [Let's talk about performance!](#lets-talk-about-performance)
+  - [Plans](#plans)
+    - [Maybe...](#maybe)
+  - [Useful resources](#useful-resources)
+    - [Site](#site)
+    - [YouTube](#youtube)
+    - [Libraries](#libraries)
+<!--toc:end-->
 
 > **Note**
 > This is very young project. Bugs expected. Please write issues about them.
 > Mainly this library was build for my app for Sudoku solving - [Gudoku](https://github.com/dudozermaks/Gudoku).
-> Because those projects are activly developing, you might see some changes of API along the new releases.
+> Because those projects are actively developing, you might see some changes of API along the new releases.
 
 ## How to build
 We don't have complex build systems. Just add folder with library to include directory and some C++ files to your build list and that's it!
 
 ### For using in your own projects
 1. Clone this repo.
-2. Add `sudoku_lib.hpp` to your inclue list or put file in the same folder your files are.
+2. Add `sudoku_lib.hpp` to your include list or put file in the same folder your files are.
 3. Add `tdoku/solver_dpll_triad_simd.cc` and `tdoku/util.cc` to your build list.
-4. That's it! No more dependences!
+4. That's it! No more dependencies!
 
 ### For tests
 1. Clone this repo.
@@ -27,8 +47,8 @@ This class represents position in gird, like `Pos{0, 8}` means it's column 1 and
 ### Figure
 Set of Pos'es. This is an interesting thing.
 
-+ `Figure(9, 9)` generates Figure, which contains positions from {0, 0} to {8, 8}. Using this you can quickly itterate through all pencilmarks or all clues in the puzzle.
-+ `Figure().col(x)`, `Figure().row(x)` `Figure().square(x)` generates a Figure number x. If x=3, than it will return Figure of 3'rd column, row, or square.
++ `Figure(9, 9)` generates Figure, which contains positions from {0, 0} to {8, 8}. Using this you can quickly iterate through all pencilmarks or all clues in the puzzle.
++ `Figure().col(x)`, `Figure().row(x)` `Figure().square(x)` generates a Figure number x. If x=3, then it will return Figure of 3'rd column, row, or square.
 + Plus, you can stack those, meaning: `Figure.col(x).square(y)` returns Figure with both column X and square Y positions.
 + `Figure.get_neighbours(Pos pos)` returns Figure of column, row and square this pos belongs to.
 
@@ -36,7 +56,7 @@ There is more, but this is some of the most useful features.
 
 ### Puzzle
 This class stores clues and pencilmarks. Can also generate pencilmarks using clues.
-There is quite a few methods, and they all are rarely used, but when used, they are quite convenient.
+There are quite a few methods, and they all are rarely used, but when used, they are quite convenient.
 
 ### Human Solver
 As for now HumanSolver supports few methods: 
@@ -49,7 +69,7 @@ As for now HumanSolver supports few methods:
 + X-Wing
 
 ### Generator
-Generates minimized sudoku puzzle.
+Generates minimized Sudoku puzzle.
 
 It can solve puzzles and return methods, used for solving and puzzle score.
 Score for each method:
@@ -82,24 +102,24 @@ HumanSolver (as for version 1.0.0) with -O3 flag solves about 200-250 medium puz
 + Add rating-based generation of puzzles. Right now, when you generate a puzzle you recive puzzle with random difficulty.
 + Speed up HumanSolver. Optimize and improve optimizable and improvable:).
 + Add caching to HumanSolver and Generator. The technique for HumanSolver is already made up, only thing left is to implement it.
-+ Add ImageMaker, that makes picture out of Puzzle. Probably will have some additional dependecies (but maybe not). Probably will be based on SVG format.
++ Add ImageMaker, that makes picture out of Puzzle. Probably will have some additional dependencies (but maybe not). Probably will be based on SVG format.
 + Make additional app to generate Sudoku puzzles (for journals, personal use, etc.).
 + Add good documentation, maybe even with Doxygen.
 + Add better tests.
 + Create basic website for this project.
 
 ### Maybe...
-+ ...Completely re-write this, to Rust or even Zig or something else... The reason I wrote it in C++ is that I know this language very well. I know that start a project in C++ now is a bad idea, so maybe i re-write it.
-+ ...Add programmable validator of sudoku puzzles with it's own syntax, for killer and other variations. I think it will be slow, so you will be able only validate puzzles with it.
++ ... Completely re-write this, to Rust or even Zig or something else... The reason I wrote it in C++ is that I know this language very well. I know that start a project in C++ now is a bad idea, so maybe I re-write it.
++ ... Add programmable validator of Sudoku puzzles with its own syntax, for killer and other variations. I think it will be slow, so you will be able only validate puzzles with it.
 
 ## Useful resources
-### Sites
+### Site
 - [Sudoku Wiki](https://www.sudokuwiki.org/sudoku.htm) - Sudoku solver that uses human methods. Every method explained with details and examples. Love this one!
-- [Sudoku Coach](http://www.taupierbw.be/SudokuCoach) - Detailed description of almost all sudoku methods with examples.
+- [Sudoku Coach](http://www.taupierbw.be/SudokuCoach) - Detailed description of almost all Sudoku methods with examples.
 - [Sudoku Of The Day](https://www.sudokuoftheday.com) - Good example of rating a Sudoku puzzle. Scores from methods was taken from their website.
 
-### Youtube
-- [Cracking The Cryptic](https://www.youtube.com/@CrackingTheCryptic) - Youtube chanell, where to men solve logical puzzles. I got so much inspirations from this one! It's definitely content made mainly for older generation, but I enjoy it so much! Also, I've got some sudoku strateges from them (like Phistomefel Ring).
+### YouTube
+- [Cracking The Cryptic](https://www.youtube.com/@CrackingTheCryptic) - YouTube Chanel, where to men solve logical puzzles. I got so many inspirations from this one! It's definitely content made mainly for older generation, but I enjoy it so much! Also, I've got some Sudoku strategies from them (like Phistomefel Ring).
 
 ### Libraries
-- [Tdoku](https://github.com/t-dillon/tdoku) - Fastest sudoku solver. It's shipped with library in most minimal form possible.
+- [Tdoku](https://github.com/t-dillon/tdoku) - Fastest Sudoku solver. It's shipped with library in most minimal form possible.
