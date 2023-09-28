@@ -118,13 +118,8 @@ HumanSolver (as for version 1.0.0) with -O3 flag solves about 200-250 medium puz
 - [Sudoku Coach](http://www.taupierbw.be/SudokuCoach) - Detailed description of almost all Sudoku methods with examples.
 - [Sudoku Of The Day](https://www.sudokuoftheday.com) - Good example of rating a Sudoku puzzle. Scores from methods was taken from their website.
 
-<<<<<<< HEAD
 ### YouTube
 - [Cracking The Cryptic](https://www.youtube.com/@CrackingTheCryptic) - YouTube Chanel, where to men solve logical puzzles. I got so many inspirations from this one! It's definitely content made mainly for older generation, but I enjoy it so much! Also, I've got some Sudoku strategies from them (like Phistomefel Ring).
-=======
-### Youtube
-- [Cracking The Cryptic](https://www.youtube.com/@CrackingTheCryptic) - Youtube channel, where to men solve logical puzzles. I got so much inspirations from this one! It's definitely content made mainly for older generation, but I enjoy it so much! Also, I've got some sudoku strateges from them (like Phistomefel Ring).
->>>>>>> refs/remotes/origin/main
 
 ### Libraries
 - [Tdoku](https://github.com/t-dillon/tdoku) - Fastest Sudoku solver. It's shipped with library in most minimal form possible.
