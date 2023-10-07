@@ -174,8 +174,12 @@ void test_human_solver(){
 void test_generator(){
 	Sudoku::Generator generator;
 	Sudoku::Puzzle puzzle = generator.generate();
+	Sudoku::TdokuLib tdoku(puzzle);
 	puzzle.print_clues();
-	// TODO: add test on correctness of sudoku.
+	if (!tdoku.has_unique_solution()){
+		std::cout << "Puzzle has more than 1 solution\n Exiting!" << std::endl;
+    std::exit(1);
+	}
 }
 
 int main(int argc, char **argv) {
