@@ -1049,6 +1049,19 @@ public:
 		return count_solutions(2) == 1;
 	}
 
+	Puzzle solve(){
+		Puzzle solved;
+
+		char solution[81];
+		size_t number_of_guesses = 0;
+
+		Tdoku::SolveSudoku(cstr_puzzle, 1, 0, solution, &number_of_guesses);
+		
+		solved.load(solution);
+
+		return solved;
+	}
+
 	std::string minimize(){
 		char res[81];
 		strcpy(res, cstr_puzzle);
