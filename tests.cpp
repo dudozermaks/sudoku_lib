@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <random>
 
 class InputParser {
 public:
@@ -171,14 +172,17 @@ void test_human_solver(){
   // // Hardest sudoku ever
 }
 
-void test_generator(){
-	Sudoku::Generator generator;
-	Sudoku::Puzzle puzzle = generator.generate();
-	Sudoku::TdokuLib tdoku(puzzle);
-	puzzle.print_clues();
-	if (!tdoku.has_unique_solution()){
-		std::cout << "Puzzle has more than 1 solution\n Exiting!" << std::endl;
-    std::exit(1);
+void test_generator(int num_times){
+	for (int i=0; i<num_times; i++){
+		Sudoku::Generator generator(std::random_device{}());
+		Sudoku::Puzzle puzzle = generator.generate();
+		Sudoku::TdokuLib tdoku(puzzle);
+		std::cout << "New puzzle" << std::endl;
+		puzzle.print_clues();
+		if (!tdoku.has_unique_solution()){
+			std::cout << "Puzzle has more than 1 solution\n Exiting!" << std::endl;
+			std::exit(1);
+		}
 	}
 }
 
@@ -203,7 +207,7 @@ int main(int argc, char **argv) {
 
 	if (args.has("--generator"), args.has("-g")){
 		std::cout << "testing generator" << std::endl;
-		test_generator();
+		test_generator(10);
 	}
 
 	if (args.has("--no-output") || args.has("-no")){
