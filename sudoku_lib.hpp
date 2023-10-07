@@ -1057,7 +1057,7 @@ public:
 
 		Tdoku::SolveSudoku(cstr_puzzle, 1, 0, solution, &number_of_guesses);
 		
-		solved.load(solution);
+		solved.load(std::string(solution, 81));
 
 		return solved;
 	}
