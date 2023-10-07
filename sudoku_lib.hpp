@@ -1068,6 +1068,15 @@ private:
     return false;
   }
 
+	void minimize(){
+		std::string clues_string = puzzle.clues_as_string();
+		char clues_cstring[81];
+		std::strcpy(clues_cstring, clues_string.c_str());
+
+		Tdoku::TdokuMinimize(false, false, clues_cstring);
+		puzzle.load(clues_cstring);
+	}
+
 public:
   Generator(unsigned int seed = 0) {
 		Tdoku::TdokuSetSeed(seed);
@@ -1079,17 +1088,8 @@ public:
     fill_diagonals();
     // starting from second square
     fill({3, 0});
-    // remove(cells_to_remove_before_difficult_check);
-		std::string clues_string = puzzle.clues_as_string();
-		char *cstr = new char[clues_string.length() + 1];
-		std::strcpy(cstr, clues_string.c_str());
-		std::cout << std::string(cstr) << std::endl;
 
-		Tdoku::TdokuMinimize(false, false, cstr);
-		puzzle.load(cstr);
-
-		std::cout << std::string(cstr) << std::endl;
-		delete [] cstr;
+		minimize();
     return puzzle;
   }
 };
