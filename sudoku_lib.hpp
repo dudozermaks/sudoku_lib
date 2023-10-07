@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstring>
 #include <iostream>
 
@@ -1021,6 +1022,41 @@ public:
   Puzzle &get_puzzle() { return puzzle; }
 };
 
+class TdokuLib{
+	Puzzle puzzle;
+	char cstr_puzzle[81];
+	void generate_cstr(){
+		std::string clues_string = puzzle.clues_as_string();
+		std::replace(clues_string.begin(), clues_string.end(), '0', '.');
+		std::strcpy(cstr_puzzle, clues_string.c_str());
+	}
+public:
+	TdokuLib(Puzzle puzzle){
+		load(puzzle);
+	}
+	void load(Puzzle puzzle){
+		this->puzzle = puzzle;
+		generate_cstr();
+	}
+
+	int count_solutions(size_t limit = 99){
+		char solution[81];
+		size_t number_of_guesses = 0;
+		return Tdoku::SolveSudoku(cstr_puzzle, limit, 0, solution, &number_of_guesses);
+	}
+
+	bool has_unique_solution(){
+		return count_solutions(2) == 1;
+	}
+
+	std::string minimize(){
+		char res[81];
+		strcpy(res, cstr_puzzle);
+		Tdoku::TdokuMinimize(false, false, res);
+		return std::string(res);
+	}
+};
+
 class Generator {
 private:
   Puzzle puzzle;
@@ -1069,12 +1105,8 @@ private:
   }
 
 	void minimize(){
-		std::string clues_string = puzzle.clues_as_string();
-		char clues_cstring[81];
-		std::strcpy(clues_cstring, clues_string.c_str());
-
-		Tdoku::TdokuMinimize(false, false, clues_cstring);
-		puzzle.load(clues_cstring);
+		TdokuLib tdoku(puzzle);
+		puzzle.load(tdoku.minimize());
 	}
 
 public:
