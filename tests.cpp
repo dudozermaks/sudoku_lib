@@ -39,9 +39,6 @@ Sudoku::HumanSolver::Result test_puzzle(std::string puzzle_string) {
   }
   Sudoku::HumanSolver solver{puzzle};
   Sudoku::HumanSolver::Result solver_result = solver.solve();
-  if (!solver_result.is_solved) {
-    std::exit(1);
-  }
   return solver_result;
 }
 
@@ -164,6 +161,7 @@ void test_human_solver(){
                true,
                {"Candidate Lines", "Double Pairs", "Naked Pair", "Naked Quad",
                 "Single Candidate", "Single Position"}});
+	// TODO: implement those like tests
   // test_puzzle("901500046425090081860010020502000000019000460600000002196040253200060817000001694");
   // test_puzzle("600802735702356940300407062100975024200183079079624003400560207067240300920738406");
   // // naked 3
