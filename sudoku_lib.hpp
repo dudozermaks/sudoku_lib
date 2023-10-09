@@ -1124,6 +1124,9 @@ private:
 
 public:
   Generator(unsigned int seed = 0) {
+		set_seed(seed);
+	}
+	void set_seed(unsigned int seed){
 		Tdoku::TdokuSetSeed(seed);
 		rg.seed(seed);
 	}
