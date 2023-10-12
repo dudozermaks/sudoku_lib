@@ -2,7 +2,11 @@
 #define TDOKU_SIMD_VECTORS_H
 
 #include <cstring>
+#if defined(__aarch64__)
+#include "sse2neon.h"
+#else
 #include <immintrin.h>
+#endif
 #include <memory>
 #include <tuple>
 #include <utility>
