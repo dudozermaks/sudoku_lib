@@ -1028,7 +1028,8 @@ class TdokuLib{
 	void generate_cstr(){
 		std::string clues_string = puzzle.clues_as_string();
 		std::replace(clues_string.begin(), clues_string.end(), '0', '.');
-		std::strcpy(cstr_puzzle, clues_string.c_str());
+		if (clues_string.size() != 81) {return;}
+		strncpy(cstr_puzzle, clues_string.c_str(), 81);
 	}
 public:
 	TdokuLib(Puzzle puzzle){
@@ -1064,9 +1065,9 @@ public:
 
 	std::string minimize(){
 		char res[81];
-		strcpy(res, cstr_puzzle);
+		strncpy(res, cstr_puzzle, 81);
 		Tdoku::TdokuMinimize(false, false, res);
-		return std::string(res);
+		return std::string(res, 81);
 	}
 };
 
