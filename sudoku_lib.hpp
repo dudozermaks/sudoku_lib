@@ -1026,6 +1026,7 @@ class TdokuLib{
 	Puzzle puzzle;
 	char cstr_puzzle[81];
 	void generate_cstr(){
+		cstr_puzzle[0] = '\0';
 		std::string clues_string = puzzle.clues_as_string();
 		std::replace(clues_string.begin(), clues_string.end(), '0', '.');
 		if (clues_string.size() != 81) {return;}
